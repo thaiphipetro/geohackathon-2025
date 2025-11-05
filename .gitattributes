@@ -1,0 +1,90 @@
+# GeoHackathon 2025 - Git Attributes
+
+# ============================================
+# Auto detect text files and normalize line endings
+# ============================================
+* text=auto
+
+# ============================================
+# Source Code
+# ============================================
+*.py text eol=lf
+*.ipynb text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+
+# ============================================
+# Documentation
+# ============================================
+*.md text eol=lf
+*.txt text eol=lf
+*.rst text eol=lf
+
+# ============================================
+# Configuration Files
+# ============================================
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# ============================================
+# Web Files
+# ============================================
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+
+# ============================================
+# Binary Files (no line ending normalization)
+# ============================================
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.pptx binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.pkl binary
+*.pickle binary
+*.pt binary
+*.pth binary
+*.h5 binary
+*.onnx binary
+
+# ============================================
+# Git LFS (if needed in future)
+# ============================================
+# Uncomment these if you decide to use Git LFS for large files
+# *.pdf filter=lfs diff=lfs merge=lfs -text
+# *.xlsx filter=lfs diff=lfs merge=lfs -text
+# *.pt filter=lfs diff=lfs merge=lfs -text
+# *.pth filter=lfs diff=lfs merge=lfs -text
+
+# ============================================
+# Jupyter Notebooks
+# ============================================
+# Don't diff notebook outputs (optional)
+*.ipynb diff=jupyternotebook
+
+# ============================================
+# Windows Specific
+# ============================================
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

@@ -1,0 +1,241 @@
+# GeoHackathon 2025 - Git Ignore File
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ============================================
+# Virtual Environments
+# ============================================
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ============================================
+# Training Data (DO NOT COMMIT!)
+# ============================================
+# Training data is too large for git
+Training data-shared with participants/
+data/
+*.pdf
+*.docx
+*.xlsx
+
+# Exception: Keep the nodal analysis script
+!NodalAnalysis.py
+!Training data-shared with participants/NodalAnalysis.py
+!Training data-shared with participants/boreholes.xlsx
+
+# ============================================
+# Model Files & Embeddings (Large Files)
+# ============================================
+models/
+*.pt
+*.pth
+*.bin
+*.onnx
+*.h5
+*.keras
+*.pkl
+*.pickle
+
+# Embedding models cache
+.cache/
+huggingface/
+sentence-transformers/
+
+# ============================================
+# Vector Databases
+# ============================================
+chroma_db/
+*.db
+*.sqlite
+*.index
+*.faiss
+
+# ============================================
+# Outputs & Results
+# ============================================
+outputs/
+results/
+logs/
+.logs/
+*.log
+
+# Exception: Keep example outputs
+!outputs/example_*
+
+# ============================================
+# Jupyter Notebook
+# ============================================
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+*.ipynb_checkpoints
+
+# Jupyter Notebook outputs (optional - uncomment to track)
+# *-checkpoint.ipynb
+
+# ============================================
+# IDE & Editor Files
+# ============================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# ============================================
+# Operating System Files
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.bak
+*.backup
+tmp/
+temp/
+
+# ============================================
+# Environment Variables
+# ============================================
+.env
+.env.local
+.env.*.local
+*.env
+
+# ============================================
+# Testing & Coverage
+# ============================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ============================================
+# Documentation Build
+# ============================================
+docs/_build/
+docs/_static/
+docs/_templates/
+site/
+
+# ============================================
+# Package Manager
+# ============================================
+pip-log.txt
+pip-delete-this-directory.txt
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+.dockerignore
+
+# ============================================
+# Ollama Models (Optional - these are large)
+# ============================================
+.ollama/
+ollama_data/
+
+# ============================================
+# Project Specific
+# ============================================
+# Parsed document cache
+parsed_cache/
+embedding_cache/
+
+# Large output files
+*.mp4
+*.avi
+*.mov
+
+# Submission package (create fresh each time)
+submission.zip
+submission/
+
+# ============================================
+# KEEP THESE FILES (Important!)
+# ============================================
+# Force include important files even if pattern matches above
+!.gitignore
+!.gitattributes
+!requirements.txt
+!README.md
+!CLAUDE.md
+!.claude/
+
+# Keep example data (small files only)
+!data/examples/
+!data/sample.pdf
