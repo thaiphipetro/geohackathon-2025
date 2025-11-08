@@ -1,0 +1,21 @@
+{
+  "well": "Well 5",
+  "document": "NLOG_GS_PUB_EOWR_SodM_NLW-GT-03-S1 v1.0_Redacted.pdf",
+  "table_number": 17,
+  "page": 10,
+  "section": "technical summary",
+  "total_score": 260,
+  "shape": [
+    7,
+    7
+  ],
+  "columns": [
+    "No.",
+    "Test",
+    "Test against",
+    "Test fluid",
+    "Surface Test pressure (bar)",
+    "Depth (m TVD)",
+    "Test Date"
+  ]
+}

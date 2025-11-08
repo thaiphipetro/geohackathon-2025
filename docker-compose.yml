@@ -1,0 +1,72 @@
+services:
+  # Main application service
+  app:
+    build: .
+    container_name: geohackathon-rag
+    volumes:
+      # Mount source code for development
+      - ./src:/app/src
+      - ./notebooks:/app/notebooks
+      - ./scripts:/app/scripts
+      - ./outputs:/app/outputs
+      # Mount training data (read-only)
+      - ./Training data-shared with participants:/app/data:ro
+      # Persistent storage for ChromaDB
+      - chroma_data:/app/chroma_db
+    environment:
+      - PYTHONPATH=/app
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+    depends_on:
+      - chromadb
+    networks:
+      - rag-network
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # ChromaDB vector database service
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: geohackathon-chromadb
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    ports:
+      - "8000:8000"
+    networks:
+      - rag-network
+
+  # Ollama LLM service (using host's Ollama on port 11434)
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: geohackathon-ollama
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+  #   ports:
+  #     - "11434:11434"
+  #   networks:
+  #     - rag-network
+  #   environment:
+  #     - OLLAMA_KEEP_ALIVE=24h
+  #     - OLLAMA_HOST=0.0.0.0
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command:
+  #     - |
+  #       ollama serve &
+  #       sleep 5
+  #       ollama pull llama3.2:3b
+  #       wait
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  chroma_data:
+    driver: local
+  # ollama_models:  # Not needed, using host's Ollama
+  #   driver: local

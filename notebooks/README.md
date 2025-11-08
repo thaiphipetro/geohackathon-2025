@@ -1,103 +1,177 @@
-# Exploration Notebooks
+# Notebooks Guide
 
-This folder contains Jupyter notebooks for exploring and understanding the training data.
+This folder contains Jupyter notebooks for exploring, testing, and demonstrating the RAG system.
+
+## Available Notebooks
+
+### 📊 `01_data_exploration.ipynb` - Dataset Analysis
+Initial dataset exploration and understanding.
+- Scan well reports structure
+- Test Docling parser
+- Extract sample tables
+- **Status**: ✅ Complete
+
+### 📝 `05_test_summarization.ipynb` - **SUMMARIZATION DEMO (NEW!)**
+**Sub-Challenge 1: Complete report summarization system**
+- Multi-PDF indexing (all PDFs in Well report/ folder)
+- User prompt-driven summarization with word limits
+- Context-aware table prioritization
+- Word limit accuracy testing
+- Export summaries to JSON
+- **Status**: ✅ Ready to use
+
+### 🔍 `04_interactive_rag_demo.ipynb` - **Q&A DEMO**
+Complete interactive RAG Q&A system with rich formatting.
+- Initialize RAG with Ollama + ChromaDB
+- Index Well 5 interactively
+- Test queries with beautiful output
+- Batch testing and performance metrics
+- Export results to JSON
+- **Status**: ✅ Ready to use
+
+### 🧪 `03_test_rag_system.ipynb` - Basic RAG Test
+Simpler RAG testing without rich formatting (good for understanding core pipeline).
+- **Status**: ✅ Complete
 
 ## Quick Start
 
-### 1. Install Jupyter
+### 1. Prerequisites
 ```bash
-pip install jupyter notebook
+# Start ChromaDB (required)
+docker-compose up -d chromadb
+
+# Verify Ollama (required for RAG demos)
+ollama list  # Should show llama3.2:3b
 ```
 
-### 2. Launch Notebook
+### 2. Launch Jupyter
 ```bash
-# From the project root directory
 cd notebooks
 jupyter notebook
 ```
 
-### 3. Open the Exploration Notebook
-- Open `01_data_exploration.ipynb`
-- Run cells from top to bottom
+### 3. Open Interactive Demo (Recommended)
+- Open `04_interactive_rag_demo.ipynb`
+- Run cells from top to bottom (`Shift + Enter`)
+- Or run all: `Kernel → Restart & Run All`
 
-## What This Notebook Does
+## What Each Notebook Does
 
-The data exploration notebook helps you:
+### 📊 Data Exploration (`01_data_exploration.ipynb`)
+- Scan all 8 wells and count files
+- Test Docling parsing on Well 5
+- Extract tables with MD, TVD, ID data
+- Compare multiple wells
+- **Output**: `outputs/exploration/`
 
-✅ **Understand the dataset structure**
-- Scan all 8 wells
-- Count files by type
-- Identify key documents
+### 🔍 Interactive Demo (`04_interactive_rag_demo.ipynb`)
+- Initialize complete RAG system
+- Index Well 5 (63 chunks from 16 pages)
+- Test queries with rich formatted output
+- Batch testing (6 standard queries)
+- Performance benchmarking
+- Section type mapping visualization
+- **Output**: `outputs/rag/test_results.json`
 
-✅ **Test Docling parsing**
-- Parse Well 5 EOWR report (best quality)
-- Extract text, tables, images
-- Test OCR capability
-
-✅ **Explore well reports**
-- View extracted text
-- Inspect tables (where MD, TVD, ID are!)
-- Search for well identifiers
-
-✅ **Understand NodalAnalysis.py**
-- See the exact format needed
-- Compare with extracted data
-
-✅ **Compare multiple wells**
-- Parse Wells 1, 5, 7
-- See variations in format
-- Identify challenges
-
-## Output
-
-The notebook saves:
-- `outputs/exploration/*.md` - Extracted text files
-- `outputs/exploration/*.csv` - Extracted tables
-- `outputs/exploration/exploration_findings.md` - Summary report
+### 🧪 Basic Test (`03_test_rag_system.ipynb`)
+- Same as interactive demo but simpler output
+- Good for understanding the pipeline
+- No rich formatting
 
 ## Expected Runtime
 
-- **Full notebook:** ~10-15 minutes
-- **Single well parsing:** ~1-2 minutes
-- **Multiple wells:** ~5-10 minutes
+| Notebook | Time | Description |
+|----------|------|-------------|
+| `01_data_exploration.ipynb` | ~10 min | Dataset analysis |
+| `04_interactive_rag_demo.ipynb` | ~15 min | Full RAG demo |
+| `03_test_rag_system.ipynb` | ~10 min | Basic RAG test |
 
-## Tips
+## Demo Features (Interactive Notebook)
 
-1. **Start with Well 5** - It's the best documented
-2. **Focus on tables** - They contain MD, TVD, ID data
-3. **Look for "casing" or "completion" tables** - These are key
-4. **Check table formats** - Column names may vary
+✨ **Rich Formatting**
+- Color-coded outputs
+- Tables and panels
+- Progress indicators
+
+📈 **Performance Metrics**
+- Query latency breakdown
+- Batch testing statistics
+- Benchmarking (5 iterations)
+
+🎯 **Section Mapping**
+- Query → Section type visualization
+- Retrieval precision analysis
+
+💾 **Export Functionality**
+- Save results to JSON
+- Share with team
 
 ## Troubleshooting
 
-### "ModuleNotFoundError"
+### ChromaDB Connection Error
 ```bash
-pip install docling docling[rapidocr] pandas openpyxl tabulate rich
+# Error: "Connection refused" or "Could not connect to ChromaDB"
+# Fix: Start ChromaDB container
+docker-compose up -d chromadb
+
+# Verify it's running
+docker-compose ps chromadb
 ```
 
-### "Notebook not found"
-Make sure you're in the `notebooks/` directory:
+### Ollama Model Not Found
 ```bash
-cd "C:\Users\Thai Phi\Downloads\Hackathon\notebooks"
+# Error: "model 'llama3.2:3b' not found"
+# Fix: Pull the model
+ollama pull llama3.2:3b
+
+# Verify
+ollama list
 ```
 
-### Parsing takes too long
-This is normal for the first parse. Models are downloading.
-Subsequent parses will be faster.
+### Import Errors
+```python
+# Error: "No module named 'rag_system'"
+# Fix: Check sys.path in first cell
+import sys
+sys.path.insert(0, '../src')
+```
 
-### OCR not working
-Install RapidOCR separately:
+### Rich Module Not Found
 ```bash
-pip install rapidocr-onnxruntime
+# Error: "No module named 'rich'"
+# Fix: Install rich for pretty output
+pip install rich
+```
+
+### ModuleNotFoundError (Other)
+```bash
+# Install all dependencies
+pip install -r ../requirements.txt
 ```
 
 ## Next Steps
 
-After running this notebook, you'll be ready to:
-1. Start Day 1 implementation (document parser)
-2. Build the RAG system
-3. Extract parameters for Sub-Challenge 2
+After running the interactive demo:
+
+**✅ Sub-Challenge 1 Complete** - RAG system working with 100% retrieval precision!
+
+**Next:**
+1. **Sub-Challenge 2 (20%)**: Extract MD, TVD, ID parameters
+   - Use RAG to find casing/depth sections
+   - Structured extraction with Pydantic
+   - Export to NodalAnalysis.py format
+
+2. **Sub-Challenge 3 (30%)**: Agentic workflow
+   - LangGraph agent with tools
+   - Autonomous: query → extract → analyze
+   - End-to-end automation
+
+## Output Files
+
+Notebooks generate:
+- `../outputs/rag/test_results.json` - Query test results from interactive demo
+- `../outputs/exploration/` - Dataset exploration outputs
 
 ---
 
-**Ready to explore? Open `01_data_exploration.ipynb` and get started!** 🚀
+**Ready to try the demo? Open `04_interactive_rag_demo.ipynb` 🚀**

@@ -1,0 +1,164 @@
+<!-- image -->
+
+## End of Well Report - Drilling ADK-GT-01 ADK-GT-01-S1
+
+<!-- image -->
+
+Prepared by:
+
+WEP, General Project Management and Sub Surface Design
+
+Authors:
+
+Jurjen de Vries, Thijs Boerrigter
+
+Version:
+
+1.1
+
+Publication date:
+
+January 2018
+
+<!-- image -->
+
+## Document signature sheet:
+
+|             | Name & Function                                              | Signature and Date   |
+|-------------|--------------------------------------------------------------|----------------------|
+| Prepared by | Jurjen de Vries, Thijs Boerrigter Wellsite Drilling Engineer |                      |
+| Reviewed by | Claudio Virgilio Sr. Drilling Engineer                       |                      |
+| Agreed by   | Peter Jan Kwakernaak Drilling Manager                        |                      |
+| Approved by | Bertran de Lange Manager Geothermie                          |                      |
+
+## Document Revision Control:
+
+|   Revision no. |   Version | Date       | Change Items                      | Initials   |
+|----------------|-----------|------------|-----------------------------------|------------|
+|              0 |       1   | 08/01/2018 | Initial draft for internal review | JdV        |
+|              1 |       1.1 | 16/01/2018 | Revised version                   | TB, CV     |
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+<!-- image -->
+
+## Contents
+
+|   GLOSSARY ....................................................................................................................................................... 4 | GLOSSARY ....................................................................................................................................................... 4   |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|                                                                                                                                                                  1   | GENERAL WELL DATA............................................................................................................................ 5                      |
+|                                                                                                                                                                  2   | BOREHOLE SECTION DETAILS ............................................................................................................. 6                             |
+|                                                                                                                                                                  2.1 | Depths ................................................................................................................................................. 6           |
+|                                                                                                                                                                  2.2 | Casing ................................................................................................................................................. 6           |
+|                                                                                                                                                                  3   | DRILLING FLUIDS.................................................................................................................................. 10                 |
+|                                                                                                                                                                  4   | GEOLOGICAL DATA.............................................................................................................................. 11                     |
+|                                                                                                                                                                  5   | WELL COMPLETION AND STATUS...................................................................................................... 13                                  |
+|                                                                                                                                                                  6   | SIGNATURE............................................................................................................................................ 14             |
+|                                                                                                                                                                  7   | APPENDICES ......................................................................................................................................... 14              |
+
+<!-- image -->
+
+<!-- image -->
+
+## Glossary
+
+AH
+
+Along Hole (depth)
+
+GL
+
+Ground Level
+
+hrs
+
+Hours
+
+HSE
+
+Health Safety &amp; Environment
+
+MW
+
+Mud weight
+
+NAP
+
+Normaal Amsterdam Peil
+
+RD
+
+Rijksdriehoeksmeting
+
+RT
+
+Rotary Table
+
+s.g.
+
+Specific gravity
+
+TD
+
+Total Depth
+
+TOC
+
+Top of Cement
+
+TOL
+
+Top of Liner
+
+TVD
+
+True Vertical Depth
+
+WEP
+
+Well Engineering Partners
+
+<!-- image -->
+
+<!-- image -->
+
+## 1 General Well Data
+
+## Table 1: Well Summary
+
+| License                              | Andijk                                                                                        | Andijk                                                                                        |
+|--------------------------------------|-----------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Well Number                          | ADK-GT-01 ADK-GT-01-S1                                                                        | ADK-GT-01 ADK-GT-01-S1                                                                        |
+| Well Name                            | Andijk-Geothermal-#1, -sidetrack#1                                                            | Andijk-Geothermal-#1, -sidetrack#1                                                            |
+| Well Type                            | Geothermal - water injector                                                                   | Geothermal - water injector                                                                   |
+| Location Municipality                | Hollands Kroon                                                                                | Hollands Kroon                                                                                |
+| Wellbore Profile                     | Deviated (J shape)                                                                            | Deviated (J shape)                                                                            |
+| Well target                          | Upper Rotliegend Group, Slochteren formation                                                  | Upper Rotliegend Group, Slochteren formation                                                  |
+| Commence Rig up                      | 23/10/2017 07:00 hrs                                                                          | 23/10/2017 07:00 hrs                                                                          |
+| Spud Date                            | 18/11/2017 07:30 hrs                                                                          | 18/11/2017 07:30 hrs                                                                          |
+| End of Operations Date               | 30/12/2017 20:30 hrs                                                                          | 30/12/2017 20:30 hrs                                                                          |
+| Total Days Operational               | 42.54 days (68.56 including Rig up)                                                           | 42.54 days (68.56 including Rig up)                                                           |
+| Operator                             | ECW Geo Andijk B.V.                                                                           | ECW Geo Andijk B.V.                                                                           |
+| Grid Coordinate System               | RD Rijksdriehoeksmeting (RD)                                                                  | RD Rijksdriehoeksmeting (RD)                                                                  |
+| Surface Location                     | X: 141,923.43 Y: 526,448.44                                                                   | X: 141,923.43 Y: 526,448.44                                                                   |
+| Wellsite Address                     | Nieuwe dijk 2, Andijk, 1619 PK                                                                | Nieuwe dijk 2, Andijk, 1619 PK                                                                |
+| Drilling Contractor                  | KCA Deutag Drilling GmbH                                                                      | KCA Deutag Drilling GmbH                                                                      |
+| Drilling Rig                         | T-700                                                                                         | T-700                                                                                         |
+| Depth Reference                      | Rotary Table elevation (RT), unless otherwise stated. RT is 9m above GL RT is 6.73m above NAP | Rotary Table elevation (RT), unless otherwise stated. RT is 9m above GL RT is 6.73m above NAP |
+| NAP Depth Reference                  | Ground level of surface location 2.27m below NAP                                              | Ground level of surface location 2.27m below NAP                                              |
+|                                      | Personnel                                                                                     | Personnel                                                                                     |
+| Project Manager (Manager Geothermie) | Bertran de Lange                                                                              | 23/10/2017 - 30/12/2017                                                                       |
+| Drilling Manager                     | Peter Jan Kwakernaak                                                                          | 23/10/2017 - 30/12/2017                                                                       |
+| Senior Drilling Engineer             | Claudio Virgilio                                                                              | 23/10/2017 - 30/12/2017                                                                       |
+| Well Engineer                        | Yogeshwar Patil                                                                               | 23/10/2017 - 30/12/2017                                                                       |
+| HSE Manager                          | Arno Otten                                                                                    | 23/10/2017 - 30/12/2017                                                                       |
+| Senior Wellsite Geologist            | Julien Smeulders                                                                              | 23/10/2017 - 30/12/2017                                                                       |
+| Drilling Supervisor                  | Dirk van den Nieuwendijk                                                                      | 23/10

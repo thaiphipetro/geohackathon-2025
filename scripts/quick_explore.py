@@ -72,11 +72,11 @@ def display_summary(wells_data):
         has_tech_logs = 'Technical log' in data['subfolders'] or 'Technical Log' in data['subfolders']
 
         if has_eowr and has_tech_logs and data['pdf_count'] > 5:
-            quality = "🟢 High"
+            quality = "High"
         elif has_eowr:
-            quality = "🟡 Medium"
+            quality = "Medium"
         else:
-            quality = "🔴 Low"
+            quality = "Low"
 
         summary_table.add_row(
             well_name,
@@ -108,7 +108,7 @@ Total EOWR Reports: {total_eowr}
 2. Well 7 (BRI-GT-01) - Well organized
 3. Well 1 (ADK-GT-01) - Good quality
 """,
-        title="📊 Overall Summary"
+        title="Overall Summary"
     ))
 
 
@@ -121,7 +121,7 @@ def show_well_details(wells_data, well_name):
 
     data = wells_data[well_name]
 
-    console.print(f"\n[bold cyan]═══ {well_name} Details ═══[/bold cyan]\n")
+    console.print(f"\n[bold cyan]=== {well_name} Details ===[/bold cyan]\n")
 
     # Show folder structure
     console.print(f"[bold]Path:[/bold] {data['path']}")
@@ -165,7 +165,7 @@ def main():
     display_summary(wells_data)
 
     # Show details for high-quality wells
-    console.print("\n[bold cyan]═══ High-Quality Wells Detail ═══[/bold cyan]")
+    console.print("\n[bold cyan]=== High-Quality Wells Detail ===[/bold cyan]")
     for well in ['Well 5', 'Well 7', 'Well 1']:
         show_well_details(wells_data, well)
 
@@ -191,7 +191,7 @@ def main():
     with open(summary_file, 'w') as f:
         json.dump(summary_data, f, indent=2)
 
-    console.print(f"\n[green]✓ Summary saved to:[/green] {summary_file}")
+    console.print(f"\n[green]Summary saved to:[/green] {summary_file}")
 
     # Next steps
     console.print(Panel(
@@ -212,7 +212,7 @@ def main():
 
 From: [green]Well Report/EOWR PDFs[/green]
 """,
-        title="🚀 Ready to Start!",
+        title="Ready to Start!",
         border_style="green"
     ))
 
