@@ -474,9 +474,7 @@ def extract_publication_date(text):
 # ============================================================================
 
 def scan_all_eowr_files(data_dir):
-    """Scan all wells and find EOWR files"""
-    eowr_patterns = ['eowr', 'final-well-report', 'final well report', 'end-of-well']
-
+    """Scan all wells and find ALL PDF files in 'Well report' folders"""
     all_eowr = {}
 
     for well_num in range(1, 9):
@@ -486,10 +484,8 @@ def scan_all_eowr_files(data_dir):
         if not well_dir.exists():
             continue
 
-        eowr_files = []
-        for f in well_dir.rglob("*.pdf"):
-            if any(kw in f.name.lower() for kw in eowr_patterns):
-                eowr_files.append(f)
+        # Get ALL PDFs in the Well report folder
+        eowr_files = list(well_dir.rglob("*.pdf"))
 
         all_eowr[well_name] = eowr_files
 
