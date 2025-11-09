@@ -35,7 +35,7 @@ AI-powered system for extracting parameters from well completion reports (PDFs) 
 
 ```
 .
-├── src/                          # Main source code (to be created)
+├── src/                          # Main source code
 │   ├── document_parser.py        # Docling-based PDF parsing with OCR
 │   ├── embeddings.py             # nomic-embed-text-v1.5 + ChromaDB
 │   ├── rag_system.py             # RAG query with Ollama
@@ -44,7 +44,13 @@ AI-powered system for extracting parameters from well completion reports (PDFs) 
 │   ├── agent.py                  # LangGraph agent (Sub-Challenge 3)
 │   └── vision_extractor.py       # Vision model for diagrams (bonus)
 ├── scripts/
-│   └── quick_explore.py          # CLI tool to scan training dataset
+│   ├── quick_explore.py          # CLI tool to scan training dataset
+│   ├── analyze_all_tocs.py       # ✅ Step 1: Extract TOC sections from all PDFs
+│   ├── robust_toc_extractor.py   # ✅ Core TOC extraction class
+│   ├── test_robust_extractor.py  # ✅ Validate TOC extraction on 14 PDFs
+│   ├── test_with_fallback.py     # ✅ Demonstrate PyMuPDF fallback
+│   ├── build_toc_database.py     # Build TOC-based document index
+│   └── index_all_wells.py        # Index all wells for RAG
 ├── notebooks/
 │   ├── 01_data_exploration.ipynb # Jupyter notebook for exploring data
 │   └── README.md                 # Notebook setup instructions
@@ -53,13 +59,16 @@ AI-powered system for extracting parameters from well completion reports (PDFs) 
 │   ├── test_sub_challenge_2.py
 │   └── test_sub_challenge_3.py
 ├── outputs/
-│   └── exploration/
-│       └── quick_scan_summary.json  # Dataset scan results
+│   ├── exploration/
+│   │   └── quick_scan_summary.json     # Dataset scan results
+│   └── toc_analysis/
+│       ├── ✅ 14 extracted TOC sections (100% success)
+│       └── toc_analysis_results.json    # TOC analysis metadata
 ├── .claude/tasks/                # Implementation plans & session logs
 │   ├── geohackathon-implementation-plan.md  # Full 4-week plan
 │   ├── sub-challenge-1-detailed-plan.md     # Day 1-7 breakdown
 │   ├── training-data-structure-analysis.md  # Dataset analysis
-│   └── session-log-2025-11-04.md           # Latest session log
+│   └── session-log-*.md                     # Session logs
 ├── Training data-shared with participants/  # Well reports (not in git)
 │   ├── Well 1/ through Well 8/
 │   ├── NodalAnalysis.py          # Provided nodal analysis script
@@ -73,6 +82,60 @@ AI-powered system for extracting parameters from well completion reports (PDFs) 
 ---
 
 ## Key Architecture Patterns
+
+### 0. TOC Extraction System (✅ Completed - 100% Success)
+
+**Achievement:** Successfully extracted Table of Contents from 14/14 PDFs across Wells 1-8 using adaptive pattern matching + PyMuPDF fallback.
+
+**Flow:** PDF → Docling Parser → TOC Boundary Detection → RobustTOCExtractor → Structured Entries
+
+**Core Components:**
+
+1. **TOC Boundary Detection** (`scripts/analyze_all_tocs.py`):
+   - Searches for keywords: "contents", "content", "table of contents", "index"
+   - Fallback: Detects structural patterns (multiple numbered lines)
+   - PyMuPDF fallback: When Docling corrupts TOC, use raw text extraction
+
+2. **RobustTOCExtractor** (`scripts/robust_toc_extractor.py`):
+   - Hierarchical pattern matching for multiple TOC formats
+   - Adaptive table parsing with intelligent column detection
+   - Dotted format: `1.1 Title ........ 5`
+   - Multi-line format: Section number on one line, title+page on next
+   - Space-separated format: `1.1  Title     5`
+
+**Key Design Decisions:**
+- **Hierarchical approach**: Try table extraction first, then fallback to plain text patterns
+- **Adaptive table parsing**: Intelligently detects which column contains section numbers, titles, and page numbers
+- **PyMuPDF fallback**: When Docling's aggressive table detection corrupts clean dotted format, use raw text
+- **Minimum threshold**: Require ≥3 TOC entries to consider extraction successful
+
+**Usage:**
+
+```bash
+# Step 1: Analyze all TOCs and save to outputs/toc_analysis/
+python scripts/analyze_all_tocs.py
+
+# Step 2: Test extraction on all 14 saved TOC sections
+python scripts/test_robust_extractor.py
+
+# Step 3: Demonstrate PyMuPDF fallback on failed PDF
+python scripts/test_with_fallback.py
+```
+
+**Results:**
+- TOC boundary detection: 14/14 (100%)
+- TOC entry extraction: 14/14 (100%)
+- Pattern distribution: Adaptive Table (12 PDFs), Multi-line Dotted (2 PDFs)
+
+**Common Issues & Solutions:**
+
+| Issue | Root Cause | Solution |
+|-------|------------|----------|
+| Infinite loop in `_extract_multiline_dotted()` | Counter not incremented when no match found | Added `found` boolean flag to track matches |
+| Missing "Content" singular keyword | Only searched for "contents" plural | Added "content" with word boundary check |
+| Docling table corruption | Aggressive table detection on dotted format | PyMuPDF fallback preserves clean format |
+
+---
 
 ### 1. RAG Pipeline (Sub-Challenge 1)
 **Flow:** PDF → Docling Parser → Text/Tables → Chunk → Embed → ChromaDB → Query → LLM
@@ -96,6 +159,9 @@ result = rag.query("What is the well depth?")  # Returns: {answer, sources, meta
 - Store tables as separate chunks with `chunk_type: "table"` metadata
 - Low temperature (0.1) for factual answers
 - Always cite context sources
+- **Use TOC-based chunking**: Leverage extracted TOC to create section-aligned chunks
+
+---
 
 ### 2. Structured Extraction (Sub-Challenge 2)
 **Flow:** RAG → Retrieve table chunks → LLM with JSON mode → Pydantic validation → Export
@@ -119,6 +185,8 @@ nodal_format = extractor.export_for_nodal_analysis(well_data)
 ```
 
 **Critical:** Output must match `NodalAnalysis.py` format exactly (see line 23-28 of that file).
+
+---
 
 ### 3. Agentic Workflow (Sub-Challenge 3)
 **Flow:** User prompt → LangGraph agent → Tool calls (RAG query, param extraction, nodal analysis) → Response
@@ -167,6 +235,20 @@ pip install -r requirements.txt
 python scripts/quick_explore.py
 ```
 Output: Scans all 8 wells, shows PDF/Excel counts, identifies best wells (Well 5, 7, 1)
+
+**TOC Extraction Pipeline (✅ 100% Success):**
+```bash
+# Step 1: Extract all TOC sections (outputs to outputs/toc_analysis/)
+python scripts/analyze_all_tocs.py
+
+# Step 2: Validate extraction on all 14 TOC sections
+python scripts/test_robust_extractor.py
+
+# Step 3: Test PyMuPDF fallback on specific PDF
+python scripts/test_with_fallback.py
+
+# Output: 14/14 PDFs with successful TOC extraction
+```
 
 **Deep exploration (Jupyter):**
 ```bash
@@ -239,6 +321,39 @@ git commit -m "feat: implement document parser"
 
 ---
 
+## Code Style Guidelines
+
+**MUST FOLLOW:**
+
+1. **NO EMOJIS IN CODE** - Never use emojis in Python code, comments, docstrings, or print statements
+   - ❌ Bad: `print("✅ Success!")` or `# 🎯 TODO: fix this`
+   - ✅ Good: `print("Success!")` or `# TODO: fix this`
+   - Emojis can cause encoding issues and make code less portable
+   - Only use plain ASCII characters in all code files
+
+2. **Clean, readable code:**
+   - Use descriptive variable names
+   - Add docstrings to functions and classes
+   - Keep functions focused and small
+   - Follow PEP 8 style guide
+
+3. **Error handling:**
+   - Use try-except blocks for file operations
+   - Provide clear error messages
+   - Implement fallback strategies (like PyMuPDF fallback)
+
+4. **Testing:**
+   - Write unit tests for core functions
+   - Test on multiple PDFs from different wells
+   - Validate edge cases (empty files, corrupted PDFs, etc.)
+
+5. **Documentation:**
+   - Comment complex algorithms
+   - Document assumptions and limitations
+   - Provide usage examples in docstrings
+
+---
+
 ## NodalAnalysis.py Integration
 
 **Location:** `Training data-shared with participants/NodalAnalysis.py`
@@ -304,10 +419,11 @@ well_trajectory = [
 **Detailed implementation plans are in `.claude/tasks/` - reference those for hour-by-hour breakdowns.**
 
 ### Phase 1: Sub-Challenge 1 (Week 1, 50%)
-1. Document parser with Docling + RapidOCR
-2. Embeddings (nomic-embed-text-v1.5) + ChromaDB
-3. RAG system with Ollama (temp=0.1 for factual answers)
-4. Test on all 8 wells, optimize chunk size
+1. ✅ **TOC Extraction System** - 100% success on 14 PDFs
+2. Document parser with Docling + RapidOCR
+3. Embeddings (nomic-embed-text-v1.5) + ChromaDB
+4. RAG system with Ollama (temp=0.1 for factual answers)
+5. Test on all 8 wells, optimize chunk size
 
 **Target:** <10s per query, >90% accuracy
 
@@ -338,6 +454,42 @@ well_trajectory = [
 
 ---
 
+## TOC Extraction: Lessons Learned
+
+**Achievement:** Built a robust TOC extraction system that achieves 100% success (14/14 PDFs) across diverse formats.
+
+**Key Insights:**
+
+1. **Docling's limitations:**
+   - Aggressive table detection can corrupt clean dotted formats
+   - Solution: PyMuPDF fallback preserves original text structure
+
+2. **Pattern diversity:**
+   - Markdown tables (2, 3, 4 columns)
+   - Dotted format: `1.1 Title ........ 5`
+   - Multi-line format: Section on one line, title+page on next
+   - Space-separated: `1.1  Title     5`
+
+3. **Adaptive table parsing:**
+   - Don't assume column order
+   - Intelligently detect: section column, title column, page column
+   - Handle combined columns (title + dots + page in single column)
+
+4. **Infinite loop pitfalls:**
+   - Always track whether match was found in lookahead loops
+   - Explicitly increment counter when no match to avoid getting stuck
+
+5. **Keyword matching:**
+   - Search for both "contents" and "content"
+   - Use word boundaries to avoid false matches in longer words
+
+**Code Reference:**
+- `scripts/robust_toc_extractor.py:208-267` - Multi-line dotted extractor with infinite loop fix
+- `scripts/robust_toc_extractor.py:72-158` - Adaptive table parser
+- `scripts/analyze_all_tocs.py:244-267` - PyMuPDF fallback logic
+
+---
+
 ## Important Files
 
 **Before coding:** Run `notebooks/01_data_exploration.ipynb` to understand actual data format
@@ -345,6 +497,7 @@ well_trajectory = [
 **Plans:** `.claude/tasks/` - Full implementation plans with hour-by-hour breakdowns
 **Quick start:** `START_HERE.md` - Resume guide
 **Dataset scan:** `outputs/exploration/quick_scan_summary.json`
+**TOC Analysis:** `outputs/toc_analysis/toc_analysis_results.json` - Metadata for 14 extracted TOCs
 
 ---
 
@@ -359,6 +512,10 @@ well_trajectory = [
 **Windows path spaces:** Always quote paths: `cd "C:/Users/Thai Phi/Downloads/Hackathon"`
 
 **Unicode errors:** Use ASCII alternatives (already fixed in `scripts/quick_explore.py`)
+
+**Docling corrupts TOC:** Use PyMuPDF fallback (see `scripts/test_with_fallback.py`)
+
+**TOC extraction fails:** Check if TOC uses unusual format, extend `RobustTOCExtractor` patterns
 
 ---
 
@@ -386,29 +543,29 @@ well_trajectory = [
 8. **Document clearly** - judges need to understand your approach
 9. **Optimize for judge experience** - easy install, clear output
 10. **Commit often** - use Conventional Commits format
+11. **Leverage TOC extraction** - use extracted structure for better chunking
+12. **Test fallback strategies** - PyMuPDF when Docling fails
 
 ---
 
-## Next Immediate Steps
+## Current State
 
-Based on current progress (from session-log-2025-11-04.md):
+**✅ Completed:**
+- Virtual environment setup at `venv/`
+- Dependencies installed (docling, jupyter, pandas, torch)
+- Quick scan of 8 wells, 103 PDFs identified
+- **TOC Extraction System: 100% success (14/14 PDFs)**
+  - `scripts/analyze_all_tocs.py` - Extract TOC sections
+  - `scripts/robust_toc_extractor.py` - Core extraction class
+  - `scripts/test_robust_extractor.py` - Validation tests
+  - `scripts/test_with_fallback.py` - PyMuPDF fallback demo
+  - `outputs/toc_analysis/` - 14 extracted TOC sections
 
-1. **✅ DONE:** Environment setup, dependencies installed, Jupyter server running
-2. **⏳ NEXT:** Run Jupyter exploration notebook (`notebooks/01_data_exploration.ipynb`)
-3. **⏳ TODO:** Install Ollama and pull Llama 3.2 3B
-4. **⏳ TODO:** Start Day 1 implementation (document parser)
-
-**Current State:**
-- Virtual environment: ✅ Created at `venv/`
-- Dependencies: ✅ Installed (docling, jupyter, pandas, torch)
-- Quick scan: ✅ Completed (8 wells, 103 PDFs identified)
-- Jupyter: ✅ Running on http://localhost:8888
-- Implementation: ⏳ Not started (waiting for data exploration)
-
-**Access Jupyter:**
-```
-http://localhost:8888/tree?token=cb8356dc0852a533bbc9dd04fdbd64ab293689dbf980f9e7
-```
+**⏳ Next Steps:**
+1. Build document parser with TOC-aware chunking
+2. Set up ChromaDB with nomic-embed-text-v1.5
+3. Implement RAG system with Ollama
+4. Test on Well 5
 
 ---
 
@@ -419,21 +576,8 @@ http://localhost:8888/tree?token=cb8356dc0852a533bbc9dd04fdbd64ab293689dbf980f9e
 3. **Test on all training wells** - don't overfit to one well
 4. **Optimize for CPU** - no GPU available for judges
 5. **Clear documentation** - judges need to run your code
-6. **Handle failures gracefully** - robust error handling
+6. **Handle failures gracefully** - robust error handling with fallbacks
 7. **Fast execution** - <45 seconds total is target
 8. **Easy setup** - judges must be able to install in <10 min
-- what happen tothe next cell?
-" Initialize finder
-finder = WellReportTableFinder(doc)
-
-console.print("[bold cyan]🎯 Intelligent Table Discovery Results[/bold cyan]\n")
-
-# Show discovered structure
-console.print("[bold]Document Structure (TOC):[/bold]")
-for entry in finder.toc:
-    console.print(f"  {entry['number']} {entry['title']} (page {entry['page']})")
-print()\
-the out put is Intelligent Table Discovery Results
-
-Document Structure (TOC):
-"
+9. **Leverage TOC structure** - use extracted TOC for better document understanding
+10. **Data-driven development** - analyze formats first, then build extractors

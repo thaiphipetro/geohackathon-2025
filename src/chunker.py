@@ -95,7 +95,7 @@ class SectionAwareChunker:
                     'metadata': {
                         'section_number': toc_match.get('number') if toc_match else None,
                         'section_title': toc_match.get('title') if toc_match else self._extract_title(header),
-                        'section_type': toc_match.get('type') if toc_match else None,
+                        'section_type': toc_match.get('type', None) if toc_match else None,
                         'page': toc_match.get('page') if toc_match else None,
                         'chunk_index': chunk_idx,
                     }
