@@ -108,10 +108,20 @@ class RobustTOCExtractor:
         title = None
         page = None
 
-        # Step 1: Find section number (first column matching \d+\.?\d*)
+        # Step 1: Find section number (first column matching \d+\.?\d* or Appendix)
+        appendix_col_with_title = None
         for col in parts:
+            # Match numeric sections: 1, 1.1, 1.2.3
             if re.match(r'^\d+\.?\d*\.?\d*$', col):
                 section_num = col
+                break
+            # Match Appendix entries: "Appendix 1", "A d ppen ix 1" (with OCR errors)
+            appendix_match = re.search(r'(?:A\s*p*\s*d?\s*p*pen\s*d?ix|Appendix)\s+(\d+)', col, re.IGNORECASE)
+            if appendix_match:
+                section_num = f"Appendix {appendix_match.group(1)}"
+                # Check if this column also contains the title (e.g., "Appendix 1, Detailed drilling program")
+                if ',' in col:
+                    appendix_col_with_title = col
                 break
 
         if not section_num:
@@ -121,6 +131,9 @@ class RobustTOCExtractor:
         for col in parts:
             if col == section_num:
                 continue  # Skip section number column
+            # Also skip columns that contain the appendix pattern (e.g., "Appendix 1, Title...")
+            if section_num.startswith("Appendix") and section_num in col:
+                continue
 
             # Check if this column is JUST a page number
             if re.match(r'^\d{1,3}$', col):
@@ -129,13 +142,15 @@ class RobustTOCExtractor:
                     page = page_candidate
                     continue
 
-            # Check if this column contains title + dots + page
-            dotted_match = re.match(r'^(.+?)\s*[._]{2,}\s*(\d+)\s*$', col)
+            # Check if this column contains title + dots/underscores + page
+            # Support both dots and underscores as separators
+            dotted_match = re.search(r'[._]{2,}\s*(\d+)\s*$', col)
             if dotted_match:
-                title_candidate = dotted_match.group(1).strip()
-                page_candidate = dotted_match.group(2).strip()
+                page_candidate = dotted_match.group(1)
+                # Extract title (everything before the dots/underscores)
+                title_candidate = col[:dotted_match.start()].strip()
 
-                if len(title_candidate) > 2 and page_candidate.isdigit():
+                if len(title_candidate) > 1 and page_candidate.isdigit():
                     title = title_candidate
                     page = int(page_candidate)
                     break  # Found both in same column!
@@ -147,13 +162,22 @@ class RobustTOCExtractor:
                     if not title:  # Only take first title column
                         title = col
 
-        # Validate we have all required pieces
-        if section_num and title and page:
-            return {
+        # If we haven't found a title yet, try to extract from appendix column
+        if not title and appendix_col_with_title:
+            # Extract title after comma: "Appendix 1, Title" -> "Title"
+            title_parts = appendix_col_with_title.split(',', 1)
+            if len(title_parts) > 1:
+                title = title_parts[1].strip()
+
+        # Validate we have minimum required pieces (section_num + title)
+        # Page is optional - some TOCs don't have pages, or we couldn't extract them
+        if section_num and title:
+            entry = {
                 'number': section_num,
                 'title': title,
-                'page': page
+                'page': page if page else 0
             }
+            return entry
 
         return None
 

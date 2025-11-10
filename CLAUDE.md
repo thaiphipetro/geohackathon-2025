@@ -250,6 +250,23 @@ python scripts/test_with_fallback.py
 # Output: 14/14 PDFs with successful TOC extraction
 ```
 
+**Multi-Document TOC Database (✅ 14/14 PDFs, 11 Categories):**
+```bash
+# Build complete multi-document TOC database with 11-category mapping
+python scripts/build_multi_doc_toc_database_full.py
+
+# Output: outputs/exploration/toc_database_multi_doc_full.json
+# - Supports multiple PDFs per well (not just best)
+# - Tracks publication dates for version control
+# - Maps 193 TOC entries to 11 section type categories
+# - Ready for page-range based chunking
+
+# Test specific well TOC extraction
+python scripts/test_well2_toc.py
+```
+
+**See detailed documentation:** `.claude/tasks/multi-doc-toc-database-implementation.md`
+
 **Deep exploration (Jupyter):**
 ```bash
 cd notebooks

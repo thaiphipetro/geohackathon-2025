@@ -275,36 +275,30 @@ class WellReportRAG:
                 'query': str,
                 'answer': str,
                 'sources': [{'section': ..., 'page': ..., 'text': ...}],
-                'well_name': str,
-                'section_types_used': List[str]
+                'well_name': str
             }
         """
         print(f"\n{'='*80}")
         print(f"QUERY: {query}")
         print(f"{'='*80}")
 
-        # Step 1: Map query to section types
-        print("\n[TARGET] Mapping query to section types...")
-        section_types = self.intent_mapper.get_section_types(query)
-        print(f"[OK] Target sections: {', '.join(section_types)}")
-
-        # Step 2: Generate query embedding
+        # Step 1: Generate query embedding
         print("\n[EMBED] Generating query embedding...")
         query_embedding = self.embedding_manager.embed_text(query)
 
-        # Step 3: Retrieve relevant chunks
-        print(f"\n Retrieving top {n_results} chunks...")
+        # Step 2: Retrieve relevant chunks (no section filtering - trust embeddings)
+        print(f"\n[RETRIEVE] Retrieving top {n_results} chunks...")
         if well_name:
             results = self.vector_store.query_with_section_filter(
                 query_embedding=query_embedding,
                 well_name=well_name,
-                section_types=section_types,
+                section_types=None,  # No filtering - let embeddings handle semantics
                 n_results=n_results
             )
         else:
             results = self.vector_store.query_all_wells(
                 query_embedding=query_embedding,
-                section_types=section_types,
+                section_types=None,  # No filtering - let embeddings handle semantics
                 n_results=n_results
             )
 
@@ -316,8 +310,7 @@ class WellReportRAG:
                 'query': query,
                 'answer': "I couldn't find any relevant information to answer this query.",
                 'sources': [],
-                'well_name': well_name,
-                'section_types_used': section_types
+                'well_name': well_name
             }
 
         # Step 4: Build context from retrieved chunks
@@ -387,8 +380,7 @@ Answer (with citations):"""
             'query': query,
             'answer': answer,
             'sources': sources,
-            'well_name': well_name or 'all wells',
-            'section_types_used': section_types
+            'well_name': well_name or 'all wells'
         }
 
     def get_indexed_wells(self) -> List[str]:
@@ -559,7 +551,6 @@ def main():
 
             print(f"\n" + "-"*80)
             print(f"Query: {result['query']}")
-            print(f"Section types: {', '.join(result['section_types_used'])}")
             print(f"\nAnswer:\n{result['answer']}")
             print(f"\nSources ({len(result['sources'])}):")
             for source in result['sources']:

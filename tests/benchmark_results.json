@@ -1,0 +1,241 @@
+{
+  "metadata": {
+    "timestamp": "2025-11-09 14:51:48",
+    "total_queries": 14,
+    "successful": 14,
+    "failed": 0,
+    "initialization_time": 2.9639036655426025
+  },
+  "time_stats": {
+    "avg_time": 1.3784275906426566,
+    "median_time": 0.9991675615310669,
+    "min_time": 0.07853507995605469,
+    "max_time": 3.508498430252075,
+    "std_dev": 1.1789062830187056,
+    "p95_time": 3.508498430252075,
+    "target": 10.0,
+    "meets_target": true
+  },
+  "category_stats": {
+    "numerical": {
+      "count": 3,
+      "avg_time": 0.7155976295471191,
+      "min_time": 0.3516066074371338,
+      "max_time": 0.9862756729125977
+    },
+    "multi_well": {
+      "count": 2,
+      "avg_time": 1.7770912647247314,
+      "min_time": 1.2243282794952393,
+      "max_time": 2.3298542499542236
+    },
+    "simple_factual": {
+      "count": 3,
+      "avg_time": 1.2218822638193767,
+      "min_time": 0.07853507995605469,
+      "max_time": 3.508498430252075
+    },
+    "summarization": {
+      "count": 2,
+      "avg_time": 2.6899375915527344,
+      "min_time": 1.945228099822998,
+      "max_time": 3.4346470832824707
+    },
+    "negative": {
+      "count": 1,
+      "avg_time": 1.0120594501495361,
+      "min_time": 1.0120594501495361,
+      "max_time": 1.0120594501495361
+    },
+    "technical": {
+      "count": 3,
+      "avg_time": 1.179809808731079,
+      "min_time": 0.4692041873931885,
+      "max_time": 2.5672106742858887
+    }
+  },
+  "detailed_results": [
+    {
+      "query": "What is the well name?",
+      "well": "Well 5",
+      "category": "simple_factual",
+      "total_time": 3.508498430252075,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 5,
+      "answer_length": 43,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What is the location?",
+      "well": "Well 1",
+      "category": "simple_factual",
+      "total_time": 0.07853507995605469,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 0,
+      "answer_length": 62,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What is the well identifier?",
+      "well": "Well 8",
+      "category": "simple_factual",
+      "total_time": 0.07861328125,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 0,
+      "answer_length": 62,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What is the total depth?",
+      "well": "Well 5",
+      "category": "numerical",
+      "total_time": 0.808910608291626,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 5,
+      "answer_length": 516,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What is the measured depth and TVD?",
+      "well": "Well 1",
+      "category": "numerical",
+      "total_time": 0.3516066074371338,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 1,
+      "answer_length": 166,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "How deep is the well?",
+      "well": "Well 6",
+      "category": "numerical",
+      "total_time": 0.9862756729125977,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 3,
+      "answer_length": 695,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What casing sizes were used?",
+      "well": "Well 5",
+      "category": "technical",
+      "total_time": 0.4692041873931885,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 1,
+      "answer_length": 215,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What is the inner diameter of the production casing?",
+      "well": "Well 5",
+      "category": "technical",
+      "total_time": 0.5030145645141602,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 1,
+      "answer_length": 445,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "Describe the casing program",
+      "well": "Well 1",
+      "category": "technical",
+      "total_time": 2.5672106742858887,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 4,
+      "answer_length": 1478,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "Summarize the key well completion details",
+      "well": "Well 5",
+      "category": "summarization",
+      "total_time": 1.945228099822998,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 5,
+      "answer_length": 818,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "Provide a brief overview of the drilling operation",
+      "well": "Well 1",
+      "category": "summarization",
+      "total_time": 3.4346470832824707,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 4,
+      "answer_length": 1519,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "Compare the depths of Well 1 and Well 5",
+      "well": null,
+      "category": "multi_well",
+      "total_time": 2.3298542499542236,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 5,
+      "answer_length": 924,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "Which wells are in the Netherlands?",
+      "well": null,
+      "category": "multi_well",
+      "total_time": 1.2243282794952393,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 5,
+      "answer_length": 378,
+      "success": true,
+      "error": null
+    },
+    {
+      "query": "What was the weather during drilling?",
+      "well": "Well 5",
+      "category": "negative",
+      "total_time": 1.0120594501495361,
+      "embedding_time": 0,
+      "retrieval_time": 0,
+      "llm_time": 0,
+      "num_sources": 5,
+      "answer_length": 534,
+      "success": true,
+      "error": null
+    }
+  ]
+}

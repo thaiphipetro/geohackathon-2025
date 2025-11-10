@@ -239,3 +239,6 @@ submission/
 # Keep example data (small files only)
 !data/examples/
 !data/sample.pdf
+
+# Archive directory (obsolete/experimental files)
+.archive/

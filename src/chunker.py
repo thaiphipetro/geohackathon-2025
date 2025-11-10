@@ -64,42 +64,51 @@ class SectionAwareChunker:
         """
         chunks = []
 
+        # Strategy 1: Try header-based splitting (most accurate)
         # Split by markdown headers (## Section Title or # Section Title)
         # This regex captures the header and its content
         sections = re.split(r'(^#{1,2}\s+.+$)', text, flags=re.MULTILINE)
 
-        # Process sections (header + content pairs)
-        for i in range(1, len(sections), 2):
-            if i >= len(sections):
-                break
+        # Check if we got meaningful sections (more than just the preamble)
+        has_headers = len(sections) > 3
 
-            header = sections[i].strip()
-            content = sections[i+1].strip() if i+1 < len(sections) else ''
+        if has_headers:
+            # Process sections (header + content pairs)
+            for i in range(1, len(sections), 2):
+                if i >= len(sections):
+                    break
 
-            if not content:
-                continue
+                header = sections[i].strip()
+                content = sections[i+1].strip() if i+1 < len(sections) else ''
 
-            # Find matching TOC entry for this header
-            toc_match = self._find_toc_match(header, toc_sections)
+                if not content:
+                    continue
 
-            # Chunk the content with overlap
-            content_chunks = self._split_text_with_overlap(content)
+                # Find matching TOC entry for this header
+                toc_match = self._find_toc_match(header, toc_sections)
 
-            # Add header to each chunk
-            for chunk_idx, chunk_text in enumerate(content_chunks):
-                # Prepend header to chunk for context
-                full_chunk = f"{header}\n\n{chunk_text}"
+                # Chunk the content with overlap (respects section boundaries)
+                content_chunks = self._split_text_with_overlap(content)
 
-                chunks.append({
-                    'text': full_chunk,
-                    'metadata': {
-                        'section_number': toc_match.get('number') if toc_match else None,
-                        'section_title': toc_match.get('title') if toc_match else self._extract_title(header),
-                        'section_type': toc_match.get('type', None) if toc_match else None,
-                        'page': toc_match.get('page') if toc_match else None,
-                        'chunk_index': chunk_idx,
-                    }
-                })
+                # Add header to each chunk
+                for chunk_idx, chunk_text in enumerate(content_chunks):
+                    # Prepend header to chunk for context
+                    full_chunk = f"{header}\n\n{chunk_text}"
+
+                    chunks.append({
+                        'text': full_chunk,
+                        'metadata': {
+                            'section_number': toc_match.get('number') if toc_match else None,
+                            'section_title': toc_match.get('title') if toc_match else self._extract_title(header),
+                            'section_type': toc_match.get('type', None) if toc_match else None,
+                            'page': toc_match.get('page') if toc_match else None,
+                            'chunk_index': chunk_idx,
+                        }
+                    })
+        else:
+            # Strategy 2: Fallback to TOC-based page boundary detection
+            # When Docling doesn't output clean headers, use page markers
+            chunks = self._chunk_by_toc_boundaries(text, toc_sections)
 
         return chunks
 
@@ -139,6 +148,100 @@ class SectionAwareChunker:
         # Remove section numbers
         title = re.sub(r'^\d+\.?\d*\.?\d*\s+', '', title)
         return title.strip()
+
+    def _chunk_by_toc_boundaries(self, text: str, toc_sections: List[Dict]) -> List[Dict]:
+        """
+        Fallback chunking method using TOC page numbers as boundaries
+
+        When Docling doesn't output clean markdown headers, we:
+        1. Detect page markers in text (e.g., "Page 5", "--- Page 5 ---")
+        2. Map text chunks to TOC sections based on page ranges
+        3. Assign metadata from TOC
+
+        Args:
+            text: Full text without clean headers
+            toc_sections: List of TOC sections with page numbers
+
+        Returns:
+            List of chunks with TOC-based metadata
+        """
+        chunks = []
+
+        # Sort TOC sections by page number
+        sorted_toc = sorted(toc_sections, key=lambda x: x.get('page', 0))
+
+        # Split text into lines for page detection
+        lines = text.split('\n')
+        current_section_idx = 0
+        current_section_text = []
+        current_page = 1
+
+        for line in lines:
+            # Detect page markers (various formats)
+            page_match = re.search(r'(?:Page|page|PAGE)\s*:?\s*(\d+)', line)
+            if page_match:
+                new_page = int(page_match.group(1))
+
+                # Check if we crossed a section boundary
+                if current_section_idx < len(sorted_toc) - 1:
+                    next_section_page = sorted_toc[current_section_idx + 1].get('page', 9999)
+                    if new_page >= next_section_page:
+                        # Save current section chunks
+                        if current_section_text:
+                            section_text = '\n'.join(current_section_text)
+                            section_chunks = self._split_text_with_overlap(section_text)
+
+                            toc = sorted_toc[current_section_idx]
+                            for chunk_idx, chunk_text in enumerate(section_chunks):
+                                header = f"## {toc.get('number', '')} {toc.get('title', 'Unknown')}"
+                                full_chunk = f"{header}\n\n{chunk_text}"
+
+                                chunks.append({
+                                    'text': full_chunk,
+                                    'metadata': {
+                                        'section_number': toc.get('number'),
+                                        'section_title': toc.get('title'),
+                                        'section_type': toc.get('type'),
+                                        'page': toc.get('page'),
+                                        'chunk_index': chunk_idx,
+                                    }
+                                })
+
+                            current_section_text = []
+
+                        # Move to next section
+                        current_section_idx += 1
+
+                current_page = new_page
+
+            current_section_text.append(line)
+
+        # Process final section
+        if current_section_text and current_section_idx < len(sorted_toc):
+            section_text = '\n'.join(current_section_text)
+            section_chunks = self._split_text_with_overlap(section_text)
+
+            toc = sorted_toc[current_section_idx]
+            for chunk_idx, chunk_text in enumerate(section_chunks):
+                header = f"## {toc.get('number', '')} {toc.get('title', 'Unknown')}"
+                full_chunk = f"{header}\n\n{chunk_text}"
+
+                chunks.append({
+                    'text': full_chunk,
+                    'metadata': {
+                        'section_number': toc.get('number'),
+                        'section_title': toc.get('title'),
+                        'section_type': toc.get('type'),
+                        'page': toc.get('page'),
+                        'chunk_index': chunk_idx,
+                    }
+                })
+
+        # If no page markers found, fall back to simple chunking
+        if not chunks:
+            return self.chunk_simple(text)
+
+        return chunks
 
     def _split_text_with_overlap(self, text: str) -> List[str]:
         """

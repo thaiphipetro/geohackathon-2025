@@ -1,0 +1,292 @@
+{
+  "metadata": {
+    "created": "2025-11-08",
+    "purpose": "Test questions for Sub-Challenge 1 RAG system evaluation",
+    "criteria": "Based on judge evaluation: accuracy, speed, completeness, minimal prompts",
+    "total_questions": 30
+  },
+  "categories": {
+    "well_identification": {
+      "description": "Questions about well names and identifiers",
+      "difficulty": "easy",
+      "expected_accuracy": ">95%",
+      "questions": [
+        {
+          "id": "Q001",
+          "question": "What wells are reported in this document?",
+          "well": "Well 5",
+          "expected_info": ["NLW-GT-03", "well name"],
+          "type": "factual"
+        },
+        {
+          "id": "Q002",
+          "question": "Can you specify the name of the well?",
+          "well": "Well 1",
+          "expected_info": ["ADK-GT-01"],
+          "type": "factual"
+        },
+        {
+          "id": "Q003",
+          "question": "What is the well identifier?",
+          "well": "Well 8",
+          "expected_info": ["MSD-GT-01"],
+          "type": "factual"
+        }
+      ]
+    },
+    "location": {
+      "description": "Questions about well locations and coordinates",
+      "difficulty": "easy",
+      "expected_accuracy": ">90%",
+      "questions": [
+        {
+          "id": "Q004",
+          "question": "Can you find the location of the well?",
+          "well": "Well 5",
+          "expected_info": ["Netherlands", "location", "coordinates"],
+          "type": "factual"
+        },
+        {
+          "id": "Q005",
+          "question": "Where is the well located?",
+          "well": "Well 1",
+          "expected_info": ["Aardwarmte Delft", "Netherlands"],
+          "type": "factual"
+        },
+        {
+          "id": "Q006",
+          "question": "What are the coordinates of the well?",
+          "well": "Well 6",
+          "expected_info": ["coordinates", "latitude", "longitude"],
+          "type": "factual"
+        }
+      ]
+    },
+    "dates": {
+      "description": "Questions about drilling dates and timelines",
+      "difficulty": "easy",
+      "expected_accuracy": ">90%",
+      "questions": [
+        {
+          "id": "Q007",
+          "question": "When was the drilling completed?",
+          "well": "Well 5",
+          "expected_info": ["2020", "completion date"],
+          "type": "factual"
+        },
+        {
+          "id": "Q008",
+          "question": "What is the publication date of this report?",
+          "well": "Well 1",
+          "expected_info": ["2018", "date"],
+          "type": "factual"
+        },
+        {
+          "id": "Q009",
+          "question": "When did drilling operations start?",
+          "well": "Well 8",
+          "expected_info": ["date", "start"],
+          "type": "factual"
+        }
+      ]
+    },
+    "operator": {
+      "description": "Questions about operators and contractors",
+      "difficulty": "medium",
+      "expected_accuracy": ">85%",
+      "questions": [
+        {
+          "id": "Q010",
+          "question": "Who was responsible for the drilling operation?",
+          "well": "Well 5",
+          "expected_info": ["operator", "company"],
+          "type": "factual"
+        },
+        {
+          "id": "Q011",
+          "question": "What company operated this well?",
+          "well": "Well 1",
+          "expected_info": ["operator", "Aardwarmte"],
+          "type": "factual"
+        },
+        {
+          "id": "Q012",
+          "question": "Who were the main contractors?",
+          "well": "Well 8",
+          "expected_info": ["contractors", "companies"],
+          "type": "factual"
+        }
+      ]
+    },
+    "depth": {
+      "description": "Questions about well depths (MD, TVD)",
+      "difficulty": "medium",
+      "expected_accuracy": ">90%",
+      "questions": [
+        {
+          "id": "Q013",
+          "question": "What is the total depth of the well?",
+          "well": "Well 5",
+          "expected_info": ["2523", "2524", "depth", "meters"],
+          "type": "numerical"
+        },
+        {
+          "id": "Q014",
+          "question": "What is the measured depth and true vertical depth?",
+          "well": "Well 1",
+          "expected_info": ["MD", "TVD", "meters"],
+          "type": "numerical"
+        },
+        {
+          "id": "Q015",
+          "question": "How deep is the well?",
+          "well": "Well 6",
+          "expected_info": ["depth", "meters"],
+          "type": "numerical"
+        }
+      ]
+    },
+    "casing": {
+      "description": "Questions about casing specifications",
+      "difficulty": "hard",
+      "expected_accuracy": ">85%",
+      "questions": [
+        {
+          "id": "Q016",
+          "question": "What casing sizes were used in the well completion?",
+          "well": "Well 5",
+          "expected_info": ["casing", "diameter", "size"],
+          "type": "technical"
+        },
+        {
+          "id": "Q017",
+          "question": "What is the inner diameter of the production casing?",
+          "well": "Well 5",
+          "expected_info": ["177.8", "178", "mm", "ID"],
+          "type": "numerical"
+        },
+        {
+          "id": "Q018",
+          "question": "Describe the casing program",
+          "well": "Well 1",
+          "expected_info": ["casing", "sections", "depths"],
+          "type": "technical"
+        }
+      ]
+    },
+    "equipment": {
+      "description": "Questions about drilling equipment",
+      "difficulty": "medium",
+      "expected_accuracy": ">80%",
+      "questions": [
+        {
+          "id": "Q019",
+          "question": "What drilling equipment was used?",
+          "well": "Well 5",
+          "expected_info": ["rig", "equipment"],
+          "type": "factual"
+        },
+        {
+          "id": "Q020",
+          "question": "What rig was used for drilling?",
+          "well": "Well 8",
+          "expected_info": ["rig", "name"],
+          "type": "factual"
+        },
+        {
+          "id": "Q021",
+          "question": "List the main equipment used",
+          "well": "Well 1",
+          "expected_info": ["equipment", "tools"],
+          "type": "factual"
+        }
+      ]
+    },
+    "summarization": {
+      "description": "Questions requiring summarization",
+      "difficulty": "hard",
+      "expected_accuracy": ">80%",
+      "questions": [
+        {
+          "id": "Q022",
+          "question": "Summarize the key well completion details in 100 words",
+          "well": "Well 5",
+          "expected_info": ["well name", "location", "depth", "completion date"],
+          "type": "summary",
+          "word_limit": 100
+        },
+        {
+          "id": "Q023",
+          "question": "Provide a brief overview of the drilling operation",
+          "well": "Well 1",
+          "expected_info": ["operation", "timeline", "results"],
+          "type": "summary",
+          "word_limit": 150
+        },
+        {
+          "id": "Q024",
+          "question": "What is the text part in the well report?",
+          "well": "Well 5",
+          "expected_info": ["sections", "content", "structure"],
+          "type": "summary"
+        }
+      ]
+    },
+    "missing_info": {
+      "description": "Questions where information is not available",
+      "difficulty": "hard",
+      "expected_accuracy": ">90%",
+      "questions": [
+        {
+          "id": "Q025",
+          "question": "What was the weather during drilling?",
+          "well": "Well 5",
+          "expected_info": ["not found", "not available", "don't know"],
+          "type": "negative"
+        },
+        {
+          "id": "Q026",
+          "question": "What was the cost of the drilling operation?",
+          "well": "Well 1",
+          "expected_info": ["not found", "not available"],
+          "type": "negative"
+        },
+        {
+          "id": "Q027",
+          "question": "Who was the drilling supervisor's assistant?",
+          "well": "Well 8",
+          "expected_info": ["not found", "not available"],
+          "type": "negative"
+        }
+      ]
+    },
+    "multi_well": {
+      "description": "Questions requiring cross-well comparison",
+      "difficulty": "medium",
+      "expected_accuracy": ">75%",
+      "questions": [
+        {
+          "id": "Q028",
+          "question": "Compare the depths of Well 1 and Well 5",
+          "well": null,
+          "expected_info": ["Well 1", "Well 5", "depth", "comparison"],
+          "type": "comparison"
+        },
+        {
+          "id": "Q029",
+          "question": "Which wells are in the Netherlands?",
+          "well": null,
+          "expected_info": ["Netherlands", "multiple wells"],
+          "type": "filter"
+        },
+        {
+          "id": "Q030",
+          "question": "What is the typical measured depth for geothermal wells?",
+          "well": null,
+          "expected_info": ["depth", "range", "typical"],
+          "type": "aggregate"
+        }
+      ]
+    }
+  }
+}

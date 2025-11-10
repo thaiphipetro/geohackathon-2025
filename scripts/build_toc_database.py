@@ -418,12 +418,36 @@ def extract_publication_date(text):
     lines = text.split('\n')
     found_dates = []
 
-    for i, line in enumerate(lines):
+    # First, search near keywords (higher priority)
+    for i, line in enumerate(lines[:100]):  # Search first 100 lines
         line_lower = line.lower()
 
         if any(keyword in line_lower for keyword in context_keywords):
             # Search this line + next 2 lines
             search_text = ' '.join(lines[i:i+3])
+
+            # Fix Dutch month names and common OCR/typo errors
+            month_fixes = {
+                # Dutch month names
+                'januari': 'January',
+                'februari': 'February',
+                'maart': 'March',
+                'mei': 'May',
+                'juni': 'June',
+                'juli': 'July',
+                'augustus': 'August',
+                'oktober': 'October',
+                # Common OCR/typo errors
+                'janaury': 'January',
+                'januray': 'January',
+                'decemeber': 'December',
+                'ocotber': 'October',
+                'septmeber': 'September'
+            }
+            search_text_fixed = search_text
+            for typo, correct in month_fixes.items():
+                search_text_fixed = re.sub(typo, correct, search_text_fixed, flags=re.IGNORECASE)
+            search_text = search_text_fixed
 
             # Pattern 1: Month/Year
             month_year_pattern = r'\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)\s*[/\-]?\s*((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)?\s*(\d{4})\b'
@@ -434,18 +458,37 @@ def extract_publication_date(text):
                     year = match[2]
                     date_str = f"01 {month} {year}"
                     date_obj = datetime.datetime.strptime(date_str, '%d %B %Y')
-                    if 2015 <= date_obj.year <= 2025:
+                    if 2000 <= date_obj.year <= 2025:
                         found_dates.append(date_obj)
                 except:
                     try:
                         date_str = f"01 {month} {year}"
                         date_obj = datetime.datetime.strptime(date_str, '%d %b %Y')
-                        if 2015 <= date_obj.year <= 2025:
+                        if 2000 <= date_obj.year <= 2025:
                             found_dates.append(date_obj)
                     except:
                         continue
 
-            # Pattern 2: Full dates
+            # Pattern 2: Ordinal indicator format (11 th of February 2011)
+            ordinal_pattern = r'\b(\d{1,2})\s+(?:st|nd|rd|th)\s+of\s+((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)\s+(\d{4})\b'
+            ordinal_matches = re.findall(ordinal_pattern, search_text, re.IGNORECASE)
+            for match in ordinal_matches:
+                try:
+                    day, month, year = match
+                    date_str = f"{day} {month} {year}"
+                    date_obj = datetime.datetime.strptime(date_str, '%d %B %Y')
+                    if 2000 <= date_obj.year <= 2025:
+                        found_dates.append(date_obj)
+                except:
+                    try:
+                        date_str = f"{day} {month} {year}"
+                        date_obj = datetime.datetime.strptime(date_str, '%d %b %Y')
+                        if 2000 <= date_obj.year <= 2025:
+                            found_dates.append(date_obj)
+                    except:
+                        continue
+
+            # Pattern 3: Full dates
             date_patterns = [
                 r'\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{4})\b',
                 r'\b(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b',
@@ -458,14 +501,46 @@ def extract_publication_date(text):
                     for fmt in ['%d-%m-%Y', '%d.%m.%Y', '%d/%m/%Y', '%Y-%m-%d', '%Y/%m/%d', '%d %B %Y', '%d %b %Y']:
                         try:
                             date_obj = datetime.datetime.strptime(match, fmt)
-                            if 2015 <= date_obj.year <= 2025:
+                            if 2000 <= date_obj.year <= 2025:
                                 found_dates.append(date_obj)
                             break
                         except:
                             continue
 
+    # If no dates found near keywords, search broadly in first 20 lines for standalone dates
+    if not found_dates:
+        search_text = ' '.join(lines[:20])
+
+        # Apply month fixes
+        month_fixes = {
+            'januari': 'January', 'februari': 'February', 'maart': 'March',
+            'mei': 'May', 'juni': 'June', 'juli': 'July',
+            'augustus': 'August', 'oktober': 'October'
+        }
+        for typo, correct in month_fixes.items():
+            search_text = re.sub(typo, correct, search_text, flags=re.IGNORECASE)
+
+        # Look for "Month Year" format (e.g., "April 2024")
+        month_year_pattern = r'\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*)\s+(\d{4})\b'
+        matches = re.findall(month_year_pattern, search_text, re.IGNORECASE)
+        for match in matches:
+            try:
+                month, year = match
+                date_str = f"01 {month} {year}"
+                date_obj = datetime.datetime.strptime(date_str, '%d %B %Y')
+                if 2000 <= date_obj.year <= 2025:
+                    found_dates.append(date_obj)
+            except:
+                try:
+                    date_str = f"01 {month} {year}"
+                    date_obj = datetime.datetime.strptime(date_str, '%d %b %Y')
+                    if 2000 <= date_obj.year <= 2025:
+                        found_dates.append(date_obj)
+                except:
+                    continue
+
     if found_dates:
-        return max(found_dates)
+        return min(found_dates)  # Return earliest date (publication date is usually first)
     return None
 
 
