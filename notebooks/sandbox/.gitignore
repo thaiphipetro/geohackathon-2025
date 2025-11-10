@@ -1,0 +1,8 @@
+# Ignore all sandbox data (ChromaDB, outputs, temp files)
+*
+
+# But keep this .gitignore file
+!.gitignore
+
+# Keep README if we add one
+!README.md
