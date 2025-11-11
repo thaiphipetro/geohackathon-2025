@@ -46,22 +46,45 @@ class TOCEnhancedReIndexer:
         self.table_chunker = TableChunker()
         print("[OK] Table chunker ready")
 
-        # Setup Docling for full PDF parsing
+        # Setup Docling with ALL advanced features for comprehensive extraction
         from docling.document_converter import DocumentConverter
         from docling.datamodel.pipeline_options import PdfPipelineOptions
         from docling.datamodel.base_models import InputFormat
         from docling.document_converter import PdfFormatOption
+        from docling.datamodel.pipeline_options import TableFormerMode
 
         pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_ocr = True
+
+        # 1. TABLEFORMER ACCURATE MODE - Extract ALL tables completely
         pipeline_options.do_table_structure = True
+        pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE
+        pipeline_options.table_structure_options.do_cell_matching = False  # Better for merged cells
+
+        # 2. ENHANCED OCR - Better for scanned documents
+        pipeline_options.do_ocr = True
+
+        # 3. PICTURE EXTRACTION - Extract diagrams and schematics
+        pipeline_options.generate_picture_images = True
+        pipeline_options.images_scale = 2.0  # Higher resolution (better VLM accuracy, actually faster!)
+        pipeline_options.do_picture_classification = True
+
+        # 4. PICTURE DESCRIPTION - SmolVLM-256M for diagram OCR and annotations
+        from docling.datamodel.pipeline_options import smolvlm_picture_description
+
+        pipeline_options.do_picture_description = True
+        pipeline_options.picture_description_options = smolvlm_picture_description
+        pipeline_options.picture_description_options.prompt = (
+            "Describe this diagram or figure in detail. "
+            "Include all visible text, labels, measurements, annotations, and handwritten notes. "
+            "Mention axes, legends, and any technical information shown."
+        )
 
         self.converter = DocumentConverter(
             format_options={
                 InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
             }
         )
-        print("[OK] Docling converter ready")
+        print("[OK] Docling converter ready (TableFormer ACCURATE + SmolVLM-256M + Enhanced OCR)")
 
         # Load multi-document TOC database for section metadata
         toc_database_path = Path("outputs/exploration/toc_database_multi_doc_full.json")
@@ -93,6 +116,91 @@ class TOCEnhancedReIndexer:
             'wells': {},
             'errors': []
         }
+
+    def _extract_pictures(self, doc, well_name, filename):
+        """
+        Extract pictures from document and save to filesystem
+        Returns list of picture metadata for ChromaDB
+        """
+        from docling_core.types.doc.document import (
+            PictureItem,
+            PictureDescriptionData,
+            PictureClassificationData,
+        )
+
+        pictures = []
+        output_dir = Path(f"outputs/well_pictures/{well_name}")
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        for item, level in doc.iterate_items():
+            if isinstance(item, PictureItem):
+                picture_data = {
+                    'ref': str(item.self_ref),
+                    'caption': item.caption_text(doc=doc),
+                    'image_path': None,
+                    'width': None,
+                    'height': None,
+                    'page': None,
+                    'classification': None,
+                    'description': None,
+                    'contains_handwriting': False,
+                    'contains_text_labels': False,
+                }
+
+                # Save picture image
+                if hasattr(item, 'image') and item.image:
+                    # Create safe filename from ref
+                    image_filename = f"{filename.replace('.pdf', '')}_{item.self_ref.replace('#/', '').replace('/', '_')}.png"
+                    image_path = output_dir / image_filename
+
+                    try:
+                        pil_image = item.get_image(doc)
+                        pil_image.save(str(image_path))
+                        picture_data['image_path'] = str(image_path)
+                        picture_data['width'] = pil_image.width
+                        picture_data['height'] = pil_image.height
+                    except Exception as e:
+                        print(f"    [WARN] Could not save image {item.self_ref}: {e}")
+
+                # Extract annotations
+                for annotation in item.annotations:
+                    # Classification (schematic, chart, photo, etc.)
+                    if isinstance(annotation, PictureClassificationData):
+                        if annotation.predicted_classes:
+                            top_class = annotation.predicted_classes[0]
+                            picture_data['classification'] = {
+                                'type': top_class.class_name,
+                                'confidence': top_class.confidence,
+                            }
+
+                    # VLM Description
+                    elif isinstance(annotation, PictureDescriptionData):
+                        description_text = annotation.text
+                        picture_data['description'] = description_text
+
+                        # Detect handwriting
+                        handwriting_keywords = [
+                            'handwritten', 'handwriting', 'hand-written',
+                            'written by hand', 'manuscript', 'written note'
+                        ]
+                        picture_data['contains_handwriting'] = any(
+                            keyword in description_text.lower()
+                            for keyword in handwriting_keywords
+                        )
+
+                        # Detect text labels
+                        label_keywords = [
+                            'label', 'annotation', 'text', 'caption',
+                            'measurement', 'depth', 'meter', 'foot'
+                        ]
+                        picture_data['contains_text_labels'] = any(
+                            keyword in description_text.lower()
+                            for keyword in label_keywords
+                        )
+
+                pictures.append(picture_data)
+
+        return pictures
 
     def get_pdf_path(self, well, filename, filepath_hint=None):
         """Find PDF path for a given well and filename"""
@@ -139,15 +247,20 @@ class TOCEnhancedReIndexer:
             return {'status': 'error', 'error': 'File not found'}
 
         try:
-            # Parse PDF with Docling
+            # Parse PDF with Docling (comprehensive extraction)
             start_time = time.time()
 
             result = self.converter.convert(str(pdf_path))
-            markdown = result.document.export_to_markdown()
-            tables = result.document.tables if hasattr(result.document, 'tables') else []
+            doc = result.document
+            markdown = doc.export_to_markdown()
+            tables = doc.tables if hasattr(doc, 'tables') else []
+
+            # Extract pictures and save to filesystem
+            pictures = self._extract_pictures(doc, well, filename)
 
             parse_time = time.time() - start_time
             print(f"  Parsed in {parse_time:.1f}s")
+            print(f"  Extracted {len(tables)} tables, {len(pictures)} pictures")
 
             # Build TOC sections from TOC analysis data
             toc_sections = []
@@ -172,6 +285,34 @@ class TOCEnhancedReIndexer:
                 chunk['metadata']['filename'] = filename
                 chunk['metadata']['filepath'] = str(pdf_path)
 
+                # Add enriched metadata flags
+                chunk['metadata']['has_tables'] = len(tables) > 0
+                chunk['metadata']['has_pictures'] = len(pictures) > 0
+
+            # Create picture-specific chunks for VLM descriptions
+            picture_chunks = []
+            for picture in pictures:
+                if picture.get('description'):
+                    # Create chunk with VLM description
+                    picture_chunk = {
+                        'text': f"Picture: {picture.get('caption', 'No caption')}\n\nDescription: {picture['description']}",
+                        'metadata': {
+                            'well_name': well,
+                            'filename': filename,
+                            'filepath': str(pdf_path),
+                            'chunk_type': 'picture',
+                            'picture_ref': picture['ref'],
+                            'picture_path': picture.get('image_path'),
+                            'picture_type': picture.get('classification', {}).get('type') if picture.get('classification') else None,
+                            'has_handwriting': picture.get('contains_handwriting', False),
+                            'has_text_labels': picture.get('contains_text_labels', False),
+                            'section_number': None,
+                            'section_title': None,
+                            'section_type': 'visual',
+                        }
+                    }
+                    picture_chunks.append(picture_chunk)
+
             # Create table chunks if tables exist
             table_chunks = []
             if tables:
@@ -183,9 +324,9 @@ class TOCEnhancedReIndexer:
                     }
                 )
 
-            all_chunks = chunks + table_chunks
+            all_chunks = chunks + table_chunks + picture_chunks
 
-            print(f"  Created {len(chunks)} text chunks, {len(table_chunks)} table chunks")
+            print(f"  Created {len(chunks)} text chunks, {len(table_chunks)} table chunks, {len(picture_chunks)} picture chunks")
 
             if not all_chunks:
                 print(f"  [WARN] No chunks created")

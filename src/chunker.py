@@ -133,10 +133,10 @@ class SectionAwareChunker:
 
         # Find matching TOC entry
         for toc in toc_sections:
-            if toc['number'] == section_num:
+            if toc.get('section_number', toc.get('number', '')) == section_num:
                 return toc
             # Fuzzy match on title if number doesn't match
-            if header_title.lower() in toc['title'].lower() or toc['title'].lower() in header_title.lower():
+            if header_title.lower() in toc.get('title', '').lower() or toc.get('title', '').lower() in header_title.lower():
                 return toc
 
         return None
