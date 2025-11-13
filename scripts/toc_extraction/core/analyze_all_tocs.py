@@ -36,7 +36,13 @@ def is_scanned_pdf(pdf_path):
 
 
 def parse_first_n_pages(pdf_path, num_pages=10):
-    """Extract first N pages and parse with Docling + PyMuPDF fallback"""
+    """
+    Extract first N pages and parse with Docling + PyMuPDF fallback
+
+    Returns:
+        (docling_text, raw_text, is_scanned, error, page_texts)
+        page_texts: dict {page_num: text} for each page (1-indexed)
+    """
     is_scanned = is_scanned_pdf(pdf_path)
 
     # Extract raw text with PyMuPDF as fallback
@@ -63,13 +69,14 @@ def parse_first_n_pages(pdf_path, num_pages=10):
         doc.close()
 
     except Exception as e:
-        return "", raw_text, is_scanned, f"Failed to extract pages: {e}"
+        return "", raw_text, is_scanned, f"Failed to extract pages: {e}", {}
 
     # Parse with Docling
     try:
         if is_scanned:
             pipeline_options = PdfPipelineOptions()
             pipeline_options.do_ocr = True
+            pipeline_options.ocr_options.force_full_page_ocr = True  # Critical for fully scanned PDFs
             pipeline_options.do_table_structure = True
         else:
             pipeline_options = PdfPipelineOptions()
@@ -84,14 +91,28 @@ def parse_first_n_pages(pdf_path, num_pages=10):
         result = converter.convert(temp_path)
         docling_text = result.document.export_to_markdown()
 
+        # Extract page-by-page text for scanned PDFs
+        page_texts = {}
+        if is_scanned:
+            # For scanned PDFs, extract each page's text from the document
+            try:
+                for page in result.document.pages.values():
+                    page_num = page.page_no + 1  # Convert to 1-indexed
+                    page_text = page.export_to_markdown()
+                    page_texts[page_num] = page_text
+            except (AttributeError, TypeError) as e:
+                print(f"    [WARN] Could not extract page-by-page text: {e}")
+                # Fallback: no page-by-page text available
+                pass
+
         os.unlink(temp_path)
-        return docling_text, raw_text, is_scanned, None
+        return docling_text, raw_text, is_scanned, None, page_texts
     except Exception as e:
         try:
             os.unlink(temp_path)
         except:
             pass
-        return "", raw_text, is_scanned, f"Docling failed: {e}"
+        return "", raw_text, is_scanned, f"Docling failed: {e}", {}
 
 
 def find_toc_boundaries(lines):
