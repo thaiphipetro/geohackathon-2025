@@ -73,6 +73,12 @@ sentence-transformers/
 # Vector Databases
 # ============================================
 chroma_db/
+chroma_db_*/
+chroma_db_toc_aware/
+chroma_db_langchain/
+chroma_db_raw/
+chroma_db_test/
+chroma_db_toc_test/
 *.db
 *.sqlite
 *.index
