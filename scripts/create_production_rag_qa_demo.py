@@ -1,0 +1,658 @@
+"""
+Create 07_production_rag_qa_demo.ipynb - Comprehensive Production RAG QA System Guide
+
+Based on plan: .claude/tasks/jupyter-notebook-update-plan.md
+Task 1.3: Create NEW 07_production_rag_qa_demo.ipynb
+"""
+import json
+from pathlib import Path
+
+
+def create_production_demo():
+    """Create comprehensive production RAG QA demo notebook"""
+
+    cells = []
+
+    # Cell 0: Title and Introduction
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# Production RAG QA System - Comprehensive Guide\n",
+            "\n",
+            "**Complete walkthrough of the production-ready RAG QA system for Well Completion Reports**\n",
+            "\n",
+            "## Overview\n",
+            "\n",
+            "This notebook provides a comprehensive demonstration of the production RAG (Retrieval-Augmented Generation) QA system designed for querying well completion reports.\n",
+            "\n",
+            "### What is this RAG QA System?\n",
+            "\n",
+            "A RAG system combines document retrieval with language model generation to answer questions based on a knowledge base. Our system:\n",
+            "\n",
+            "1. **Retrieves** relevant document sections from well reports using semantic search\n",
+            "2. **Augments** the LLM prompt with retrieved context\n",
+            "3. **Generates** accurate, source-cited answers using Ollama Llama 3.2 3B\n",
+            "\n",
+            "### Architecture\n",
+            "\n",
+            "```\n",
+            "Question → Embedding → ChromaDB Retrieval → Context + Question → Ollama LLM → Answer + Sources\n",
+            "```\n",
+            "\n",
+            "**Components:**\n",
+            "- **Embeddings:** nomic-embed-text-v1.5 (137M params)\n",
+            "- **Vector Store:** ChromaDB (local, no Docker)\n",
+            "- **LLM:** Ollama Llama 3.2 3B (temperature=0.1 for factual answers)\n",
+            "- **Documents:** 5,258 chunks from 8 wells\n",
+            "\n",
+            "### Key Features\n",
+            "\n",
+            "- **TOC-Aware Indexing:** 93.1% section type coverage for intelligent filtering\n",
+            "- **Section Filtering:** Query specific sections (casing, geology, drilling, etc.)\n",
+            "- **Source Citation:** Every answer includes source metadata\n",
+            "- **Multi-Well Support:** Query across all 8 wells or filter by specific well\n",
+            "- **Fast Queries:** <10s average latency\n",
+            "- **No Docker Required:** Uses local ChromaDB persistence\n",
+            "\n",
+            "### Prerequisites\n",
+            "\n",
+            "1. Ollama installed with `llama3.2:3b` model\n",
+            "2. Pre-indexed database at `../chroma_db_toc_aware/`\n",
+            "3. Python packages: `langchain-chroma`, `langchain-huggingface`, `langchain-ollama`\n",
+            "\n",
+            "**Expected Runtime:** <10 minutes"
+        ]
+    })
+
+    # Cell 1: Imports
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Setup and Imports\n",
+            "import sys\n",
+            "import time\n",
+            "from pathlib import Path\n",
+            "from typing import Dict, Any, List\n",
+            "\n",
+            "# Add src to path\n",
+            "project_root = Path('.').absolute().parent\n",
+            "sys.path.insert(0, str(project_root / 'src'))\n",
+            "\n",
+            "# Import production RAG QA system\n",
+            "from rag_qa_system import WellReportQASystem, QAResult\n",
+            "\n",
+            "print(\"Imports successful!\")\n",
+            "print(f\"Project root: {project_root}\")"
+        ]
+    })
+
+    # Cell 2: Quick Start Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 1. Quick Start\n",
+            "\n",
+            "Initialize the RAG QA system and run a simple query."
+        ]
+    })
+
+    # Cell 3: Quick Start Code
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Quick Start: Initialize and query in 3 lines\n",
+            "qa_system = WellReportQASystem(verbose=True)\n",
+            "\n",
+            "result = qa_system.query(\"What is the total depth of Well 5?\")\n",
+            "\n",
+            "print(f\"\\nANSWER: {result.answer}\")"
+        ]
+    })
+
+    # Cell 4: Database Statistics Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 2. Database Statistics\n",
+            "\n",
+            "Explore the pre-indexed database contents and metadata coverage."
+        ]
+    })
+
+    # Cell 5: Database Statistics Code
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Get comprehensive database statistics\n",
+            "stats = qa_system.get_statistics()\n",
+            "\n",
+            "print(\"=\" * 80)\n",
+            "print(\"DATABASE STATISTICS\")\n",
+            "print(\"=\" * 80)\n",
+            "\n",
+            "print(f\"\\nTotal documents: {stats['total_documents']:,}\")\n",
+            "print(f\"Number of wells: {stats['num_wells']}\")\n",
+            "print(f\"\\nWells available:\")\n",
+            "for i, well in enumerate(stats['wells'], 1):\n",
+            "    print(f\"  {i}. {well}\")\n",
+            "\n",
+            "print(f\"\\nSource type distribution:\")\n",
+            "for source_type, count in sorted(stats['source_types'].items(), key=lambda x: x[1], reverse=True):\n",
+            "    pct = (count / stats['total_documents'] * 100)\n",
+            "    print(f\"  {source_type:20s}: {count:6,} ({pct:5.1f}%)\")\n",
+            "\n",
+            "print(f\"\\nSection type distribution (top 15):\")\n",
+            "section_items = sorted(stats['section_types'].items(), key=lambda x: x[1], reverse=True)\n",
+            "for section_type, count in section_items[:15]:\n",
+            "    pct = (count / stats['total_documents'] * 100)\n",
+            "    section_label = section_type if section_type else \"(none)\"\n",
+            "    print(f\"  {section_label:20s}: {count:6,} ({pct:5.1f}%)\")\n",
+            "\n",
+            "# Calculate section type coverage\n",
+            "text_chunks = sum(count for st, count in stats['source_types'].items() if st == 'text_chunk')\n",
+            "chunks_with_section = sum(count for st, count in stats['section_types'].items() if st)\n",
+            "coverage_pct = (chunks_with_section / text_chunks * 100) if text_chunks else 0\n",
+            "\n",
+            "print(f\"\\nTOC-Aware Metadata Coverage:\")\n",
+            "print(f\"  Text chunks with section_type: {chunks_with_section:,} / {text_chunks:,} ({coverage_pct:.1f}%)\")\n",
+            "\n",
+            "print(\"\\n\" + \"=\" * 80)"
+        ]
+    })
+
+    # Cell 6: Query Examples Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 3. Query Examples\n",
+            "\n",
+            "Demonstrate various query patterns and filtering options."
+        ]
+    })
+
+    # Cell 7: Helper function
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "def display_result(result: QAResult, max_sources: int = 3):\n",
+            "    \"\"\"\n",
+            "    Display query result with formatted output\n",
+            "    \n",
+            "    Args:\n",
+            "        result: QAResult object\n",
+            "        max_sources: Maximum number of sources to display\n",
+            "    \"\"\"\n",
+            "    print(f\"\\n{'='*80}\")\n",
+            "    print(f\"QUESTION: {result.question}\")\n",
+            "    if result.metadata.get('filter'):\n",
+            "        print(f\"FILTER: {result.metadata['filter']}\")\n",
+            "    print(f\"{'='*80}\\n\")\n",
+            "    \n",
+            "    print(f\"ANSWER:\")\n",
+            "    print(result.answer)\n",
+            "    \n",
+            "    print(f\"\\n{'-'*80}\")\n",
+            "    print(f\"SOURCES ({result.metadata['num_sources']} documents retrieved):\")\n",
+            "    print(f\"{'-'*80}\")\n",
+            "    \n",
+            "    for i, source in enumerate(result.sources[:max_sources], 1):\n",
+            "        print(f\"\\n[Source {i}]\")\n",
+            "        print(f\"  Well:         {source['well_name']}\")\n",
+            "        print(f\"  Source Type:  {source['source_type']}\")\n",
+            "        print(f\"  Section:      {source['section_title']}\")\n",
+            "        print(f\"  Section Type: {source['section_type']}\")\n",
+            "        print(f\"  Page:         {source['page']}\")\n",
+            "        print(f\"  PDF:          {source['pdf_file']}\")\n",
+            "        print(f\"  Content:      {source['content'][:200]}...\")\n",
+            "    \n",
+            "    if len(result.sources) > max_sources:\n",
+            "        print(f\"\\n  ... and {len(result.sources) - max_sources} more sources\")\n",
+            "    \n",
+            "    print(f\"\\n{'='*80}\\n\")"
+        ]
+    })
+
+    # Cell 8: Basic query
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Example 1: Basic query (no filters)\n",
+            "result1 = qa_system.query(\"What are the main geological formations encountered?\")\n",
+            "display_result(result1)"
+        ]
+    })
+
+    # Cell 9: Well-specific query
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Example 2: Well-specific query\n",
+            "result2 = qa_system.query(\n",
+            "    \"What is the casing program?\",\n",
+            "    filter_metadata={\"well_name\": \"well_5\"}\n",
+            ")\n",
+            "display_result(result2)"
+        ]
+    })
+
+    # Cell 10: Section-filtered query
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Example 3: Section-filtered query\n",
+            "result3 = qa_system.query_with_section_filter(\n",
+            "    question=\"Describe the drilling operations\",\n",
+            "    section_type=\"drilling\"\n",
+            ")\n",
+            "display_result(result3)"
+        ]
+    })
+
+    # Cell 11: Combined filters
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Example 4: Combined filters (well + section)\n",
+            "result4 = qa_system.query_with_section_filter(\n",
+            "    question=\"What are the casing specifications?\",\n",
+            "    section_type=\"casing\",\n",
+            "    well_name=\"well_7\"\n",
+            ")\n",
+            "display_result(result4)"
+        ]
+    })
+
+    # Cell 12: Source Citation Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 4. Source Citation Deep Dive\n",
+            "\n",
+            "Examine how to access and use source metadata for citation and verification."
+        ]
+    })
+
+    # Cell 13: Source Citation Code
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Access source documents for citation\n",
+            "result = qa_system.query(\"What is the reservoir pressure?\")\n",
+            "\n",
+            "print(\"=\" * 80)\n",
+            "print(\"SOURCE METADATA STRUCTURE\")\n",
+            "print(\"=\" * 80)\n",
+            "\n",
+            "if result.sources:\n",
+            "    print(f\"\\nExample source metadata fields:\")\n",
+            "    source = result.sources[0]\n",
+            "    for key, value in source.items():\n",
+            "        if key != 'content':\n",
+            "            print(f\"  {key:15s}: {value}\")\n",
+            "    \n",
+            "    print(f\"\\nFull content length: {len(source['content'])} characters\")\n",
+            "    print(f\"Content preview: {source['content'][:300]}...\")\n",
+            "\n",
+            "print(f\"\\nAll source fields available:\")\n",
+            "print(f\"  - content: Full text of retrieved chunk\")\n",
+            "print(f\"  - well_name: Which well the document is from\")\n",
+            "print(f\"  - source_type: text_chunk, table, or picture\")\n",
+            "print(f\"  - section_title: TOC section title\")\n",
+            "print(f\"  - section_type: Categorized section type (casing, geology, etc.)\")\n",
+            "print(f\"  - page: Page number in PDF\")\n",
+            "print(f\"  - pdf_file: Source PDF filename\")\n",
+            "\n",
+            "print(\"\\n\" + \"=\" * 80)"
+        ]
+    })
+
+    # Cell 14: Performance Testing Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 5. Performance Testing\n",
+            "\n",
+            "Measure query latency and compare performance with/without filters."
+        ]
+    })
+
+    # Cell 15: Performance Testing Code
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Performance benchmark: Various query types\n",
+            "test_queries = [\n",
+            "    (\"What is the well depth?\", None),\n",
+            "    (\"Describe the drilling program\", None),\n",
+            "    (\"What is the reservoir geology?\", {\"section_type\": \"geology\"}),\n",
+            "    (\"Describe the casing program\", {\"well_name\": \"well_5\"}),\n",
+            "    (\"What are the completion details?\", {\"$and\": [{\"well_name\": \"well_7\"}, {\"section_type\": \"completion\"}]}),\n",
+            "]\n",
+            "\n",
+            "print(\"=\" * 80)\n",
+            "print(\"PERFORMANCE BENCHMARK\")\n",
+            "print(\"=\" * 80)\n",
+            "\n",
+            "results = []\n",
+            "for query, filter_meta in test_queries:\n",
+            "    start = time.time()\n",
+            "    result = qa_system.query(query, filter_metadata=filter_meta)\n",
+            "    latency = time.time() - start\n",
+            "    \n",
+            "    filter_desc = str(filter_meta) if filter_meta else \"None\"\n",
+            "    results.append((query, filter_desc, latency, result.metadata['num_sources']))\n",
+            "    \n",
+            "    print(f\"\\nQuery: {query}\")\n",
+            "    print(f\"  Filter: {filter_desc}\")\n",
+            "    print(f\"  Latency: {latency:.2f}s\")\n",
+            "    print(f\"  Sources: {result.metadata['num_sources']}\")\n",
+            "\n",
+            "latencies = [r[2] for r in results]\n",
+            "\n",
+            "print(f\"\\n{'='*80}\")\n",
+            "print(f\"PERFORMANCE SUMMARY\")\n",
+            "print(f\"{'='*80}\")\n",
+            "print(f\"  Total queries:    {len(results)}\")\n",
+            "print(f\"  Average latency:  {sum(latencies)/len(latencies):.2f}s\")\n",
+            "print(f\"  Min latency:      {min(latencies):.2f}s\")\n",
+            "print(f\"  Max latency:      {max(latencies):.2f}s\")\n",
+            "print(f\"  Median latency:   {sorted(latencies)[len(latencies)//2]:.2f}s\")\n",
+            "print(f\"{'='*80}\")"
+        ]
+    })
+
+    # Cell 16: Use Cases Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 6. Use Cases\n",
+            "\n",
+            "Practical examples of how to use the RAG QA system for real-world tasks."
+        ]
+    })
+
+    # Cell 17: Use Case 1 - Technical Q&A
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Use Case 1: Technical Question Answering\n",
+            "print(\"=\"*80)\n",
+            "print(\"USE CASE 1: Technical Question Answering\")\n",
+            "print(\"=\"*80)\n",
+            "print(\"\\nScenario: Engineer needs casing diameter information for Well 5\")\n",
+            "print()\n",
+            "\n",
+            "result = qa_system.query(\n",
+            "    \"What are the inner diameters of the casing strings in Well 5?\",\n",
+            "    filter_metadata={\"well_name\": \"well_5\"}\n",
+            ")\n",
+            "\n",
+            "print(f\"Answer: {result.answer}\")\n",
+            "print(f\"\\nSources used: {result.metadata['num_sources']} documents\")\n",
+            "print(f\"Primary source: {result.sources[0]['pdf_file']} (page {result.sources[0]['page']})\")"
+        ]
+    })
+
+    # Cell 18: Use Case 2 - Cross-well comparison
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Use Case 2: Cross-Well Comparison\n",
+            "print(\"=\"*80)\n",
+            "print(\"USE CASE 2: Cross-Well Comparison\")\n",
+            "print(\"=\"*80)\n",
+            "print(\"\\nScenario: Compare geological formations across multiple wells\")\n",
+            "print()\n",
+            "\n",
+            "wells = [\"well_5\", \"well_7\"]\n",
+            "comparison = {}\n",
+            "\n",
+            "for well in wells:\n",
+            "    result = qa_system.query(\n",
+            "        \"What are the main geological formations encountered?\",\n",
+            "        filter_metadata={\"well_name\": well}\n",
+            "    )\n",
+            "    comparison[well] = result.answer\n",
+            "\n",
+            "for well, answer in comparison.items():\n",
+            "    print(f\"{well.upper()}:\")\n",
+            "    print(f\"{answer}\")\n",
+            "    print()"
+        ]
+    })
+
+    # Cell 19: Use Case 3 - Section-specific retrieval
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Use Case 3: Section-Specific Information Retrieval\n",
+            "print(\"=\"*80)\n",
+            "print(\"USE CASE 3: Section-Specific Information Retrieval\")\n",
+            "print(\"=\"*80)\n",
+            "print(\"\\nScenario: Extract all drilling-related information for safety analysis\")\n",
+            "print()\n",
+            "\n",
+            "drilling_queries = [\n",
+            "    \"What drilling fluid was used?\",\n",
+            "    \"Were there any drilling problems?\",\n",
+            "    \"What was the drilling rate?\"\n",
+            "]\n",
+            "\n",
+            "for query in drilling_queries:\n",
+            "    result = qa_system.query(\n",
+            "        query,\n",
+            "        filter_metadata={\"section_type\": \"drilling\"}\n",
+            "    )\n",
+            "    print(f\"Q: {query}\")\n",
+            "    print(f\"A: {result.answer}\")\n",
+            "    print()"
+        ]
+    })
+
+    # Cell 20: Advanced Features Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 7. Advanced Features\n",
+            "\n",
+            "Explore additional capabilities and customization options."
+        ]
+    })
+
+    # Cell 21: Advanced Features Code
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Advanced Feature 1: List all available wells\n",
+            "wells = qa_system.list_available_wells()\n",
+            "print(\"Available wells:\")\n",
+            "for i, well in enumerate(wells, 1):\n",
+            "    print(f\"  {i}. {well}\")\n",
+            "\n",
+            "# Advanced Feature 2: Custom temperature for creative vs factual responses\n",
+            "print(\"\\nNote: Current system uses temperature=0.1 for factual answers\")\n",
+            "print(\"For more creative responses, you can initialize with higher temperature:\")\n",
+            "print(\"  qa_system_creative = WellReportQASystem(temperature=0.7)\")\n",
+            "\n",
+            "# Advanced Feature 3: Adjust retrieval count (top_k)\n",
+            "print(\"\\nNote: Current system retrieves top_k=5 documents\")\n",
+            "print(\"For more comprehensive context, initialize with higher top_k:\")\n",
+            "print(\"  qa_system_detailed = WellReportQASystem(top_k=10)\")"
+        ]
+    })
+
+    # Cell 22: Summary Markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## Summary\n",
+            "\n",
+            "### Production RAG QA System Capabilities\n",
+            "\n",
+            "**Features Demonstrated:**\n",
+            "- **Quick Start:** Simple 3-line initialization and query\n",
+            "- **Database Statistics:** Comprehensive view of indexed content\n",
+            "- **Query Patterns:** Basic, well-specific, section-filtered, combined filters\n",
+            "- **Source Citation:** Full metadata for every retrieved document\n",
+            "- **Performance:** <10s average query latency\n",
+            "- **Use Cases:** Technical Q&A, cross-well comparison, section-specific retrieval\n",
+            "\n",
+            "### Key Benefits\n",
+            "\n",
+            "1. **Accurate Answers:** LLM grounded in actual well completion reports\n",
+            "2. **Source Transparency:** Every answer includes source citations\n",
+            "3. **Intelligent Filtering:** TOC-aware metadata enables precise queries\n",
+            "4. **Multi-Well Support:** Query across all wells or filter by specific well\n",
+            "5. **Fast Performance:** Optimized retrieval and generation pipeline\n",
+            "6. **Easy Deployment:** No Docker, local ChromaDB, pure Python\n",
+            "\n",
+            "### Production Statistics\n",
+            "\n",
+            "- **Documents:** 5,258 chunks (text, tables, pictures)\n",
+            "- **Wells:** 8 wells indexed\n",
+            "- **TOC Coverage:** 93.1% section type metadata\n",
+            "- **Query Latency:** <10s average\n",
+            "- **Model Size:** Llama 3.2 3B (runs on CPU)\n",
+            "- **Embedding Size:** 137M params (nomic-embed-text-v1.5)\n",
+            "\n",
+            "### Next Steps\n",
+            "\n",
+            "1. **Sub-Challenge 1 Submission:** Use this system for RAG-based summarization (50% of grade)\n",
+            "2. **Parameter Extraction:** Integrate with Sub-Challenge 2 (20% of grade)\n",
+            "3. **Agentic Workflow:** Combine with Sub-Challenge 3 (30% of grade)\n",
+            "\n",
+            "### Related Notebooks\n",
+            "\n",
+            "- `04_interactive_rag_demo.ipynb` - Interactive demo with editable queries\n",
+            "- `06_sub_challenge_1_guide.ipynb` - Grading criteria and evaluation\n",
+            "- `demos/08_toc_extraction_demo.ipynb` - TOC extraction details\n",
+            "- `demos/10_build_toc_database.ipynb` - Database construction process\n",
+            "\n",
+            "### Architecture Reference\n",
+            "\n",
+            "**Code:** `src/rag_qa_system.py` (394 lines)\n",
+            "\n",
+            "**Key Classes:**\n",
+            "- `WellReportQASystem`: Main RAG QA system\n",
+            "- `QAResult`: Query result with answer and sources\n",
+            "\n",
+            "**Dependencies:**\n",
+            "- LangChain 1.0+ (langchain-chroma, langchain-huggingface, langchain-ollama)\n",
+            "- ChromaDB (vector store)\n",
+            "- Ollama (LLM inference)\n",
+            "\n",
+            "### Sub-Challenge 1 Grading Criteria\n",
+            "\n",
+            "This system addresses all Sub-Challenge 1 requirements:\n",
+            "\n",
+            "- **Answer Quality (40%):** Factual, grounded in sources\n",
+            "- **Source Citation (30%):** Full metadata for every answer\n",
+            "- **Response Time (20%):** <10s average\n",
+            "- **System Robustness (10%):** Production-ready, error handling\n",
+            "\n",
+            "---\n",
+            "\n",
+            "**System Status:** Production Ready ✓\n",
+            "\n",
+            "**Last Updated:** 2025-11-14"
+        ]
+    })
+
+    # Create notebook structure
+    notebook = {
+        "cells": cells,
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3"
+            },
+            "language_info": {
+                "codemirror_mode": {
+                    "name": "ipython",
+                    "version": 3
+                },
+                "file_extension": ".py",
+                "mimetype": "text/x-python",
+                "name": "python",
+                "nbconvert_exporter": "python",
+                "pygments_lexer": "ipython3",
+                "version": "3.11.0"
+            }
+        },
+        "nbformat": 4,
+        "nbformat_minor": 4
+    }
+
+    # Write notebook
+    output_path = Path("notebooks/07_production_rag_qa_demo.ipynb")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(notebook, f, indent=2, ensure_ascii=False)
+
+    print(f"Created comprehensive production demo: {output_path}")
+    print(f"Total cells: {len(cells)}")
+    print(f"\\nNotebook sections:")
+    print(f"  1. Introduction & Architecture")
+    print(f"  2. Quick Start")
+    print(f"  3. Database Statistics")
+    print(f"  4. Query Examples")
+    print(f"  5. Source Citation")
+    print(f"  6. Performance Testing")
+    print(f"  7. Use Cases")
+    print(f"  8. Advanced Features")
+    print(f"  9. Summary")
+
+
+if __name__ == '__main__':
+    create_production_demo()

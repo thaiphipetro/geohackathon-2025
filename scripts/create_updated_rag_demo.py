@@ -1,0 +1,443 @@
+"""
+Create updated 04_interactive_rag_demo.ipynb with production RAG QA system
+
+Based on plan: .claude/tasks/jupyter-notebook-update-plan.md
+Task 1.1: Update 04_interactive_rag_demo.ipynb
+"""
+import json
+from pathlib import Path
+
+
+def create_updated_notebook():
+    """Create updated notebook with production system"""
+
+    cells = []
+
+    # Cell 0: Title
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "# Interactive RAG System Demo\n",
+            "\n",
+            "**Production RAG QA System for Well Completion Reports**\n",
+            "\n",
+            "This notebook demonstrates the production-ready RAG QA system with:\n",
+            "- Pre-indexed ChromaDB with 5,258 documents\n",
+            "- TOC-aware metadata (93.1% section type coverage)\n",
+            "- Ollama Llama 3.2 3B integration\n",
+            "- Section-filtered queries\n",
+            "- Source citation\n",
+            "\n",
+            "**Prerequisites:**\n",
+            "- Ollama installed with `llama3.2:3b` model\n",
+            "- Pre-indexed database at `../chroma_db_toc_aware/`\n",
+            "\n",
+            "**Runtime:** <5 minutes (no indexing required)"
+        ]
+    })
+
+    # Cell 1: Setup imports
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Setup\n",
+            "import sys\n",
+            "from pathlib import Path\n",
+            "\n",
+            "# Add src to path\n",
+            "project_root = Path('.').absolute().parent\n",
+            "sys.path.insert(0, str(project_root / 'src'))\n",
+            "\n",
+            "# Import production RAG QA system\n",
+            "from rag_qa_system import WellReportQASystem, QAResult\n",
+            "\n",
+            "print(\"Imports successful!\")"
+        ]
+    })
+
+    # Cell 2: Initialize section markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 1. Initialize RAG System\n",
+            "\n",
+            "Load the production RAG QA system with pre-indexed ChromaDB."
+        ]
+    })
+
+    # Cell 3: Initialize RAG system
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Initialize RAG system with pre-indexed database\n",
+            "qa_system = WellReportQASystem(\n",
+            "    chroma_dir=\"../chroma_db_toc_aware\",\n",
+            "    collection_name=\"well_reports_toc_aware\",\n",
+            "    llm_model=\"llama3.2:3b\",\n",
+            "    temperature=0.1,\n",
+            "    top_k=5,\n",
+            "    verbose=True\n",
+            ")\n",
+            "\n",
+            "print(\"\\n\" + \"=\" * 80)\n",
+            "print(\"RAG QA System initialized successfully!\")\n",
+            "print(\"=\" * 80)"
+        ]
+    })
+
+    # Cell 4: Database statistics markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 2. Database Statistics\n",
+            "\n",
+            "View the pre-indexed database contents."
+        ]
+    })
+
+    # Cell 5: Display statistics
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Get database statistics\n",
+            "stats = qa_system.get_statistics()\n",
+            "\n",
+            "print(\"=\" * 80)\n",
+            "print(\"DATABASE STATISTICS\")\n",
+            "print(\"=\" * 80)\n",
+            "print(f\"\\nTotal documents: {stats['total_documents']}\")\n",
+            "print(f\"Number of wells: {stats['num_wells']}\")\n",
+            "print(f\"Wells: {', '.join(stats['wells'])}\")\n",
+            "\n",
+            "print(f\"\\nSource type distribution:\")\n",
+            "for source_type, count in sorted(stats['source_types'].items()):\n",
+            "    print(f\"  {source_type}: {count}\")\n",
+            "\n",
+            "print(f\"\\nSection type distribution (top 10):\")\n",
+            "section_items = sorted(stats['section_types'].items(), key=lambda x: x[1], reverse=True)\n",
+            "for section_type, count in section_items[:10]:\n",
+            "    print(f\"  {section_type}: {count}\")\n",
+            "\n",
+            "print(\"\\n\" + \"=\" * 80)"
+        ]
+    })
+
+    # Cell 6: Standard queries markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 3. Test Standard Queries\n",
+            "\n",
+            "Run example queries to test the RAG system."
+        ]
+    })
+
+    # Cell 7: Query helper function
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "def query_and_display(question, filter_metadata=None):\n",
+            "    \"\"\"\n",
+            "    Query the RAG system and display results\n",
+            "    \n",
+            "    Args:\n",
+            "        question: Question to ask\n",
+            "        filter_metadata: Optional metadata filters\n",
+            "    \"\"\"\n",
+            "    print(f\"\\n{'='*80}\")\n",
+            "    print(f\"QUESTION: {question}\")\n",
+            "    if filter_metadata:\n",
+            "        print(f\"FILTER: {filter_metadata}\")\n",
+            "    print(f\"{'='*80}\\n\")\n",
+            "    \n",
+            "    result = qa_system.query(question, filter_metadata=filter_metadata)\n",
+            "    \n",
+            "    print(f\"\\nANSWER:\")\n",
+            "    print(result.answer)\n",
+            "    \n",
+            "    print(f\"\\n{'='*80}\")\n",
+            "    print(f\"SOURCES ({result.metadata['num_sources']} documents):\")\n",
+            "    print(f\"{'='*80}\")\n",
+            "    \n",
+            "    for i, source in enumerate(result.sources[:3], 1):\n",
+            "        print(f\"\\nSource {i}:\")\n",
+            "        print(f\"  Well: {source['well_name']}\")\n",
+            "        print(f\"  Section: {source['section_title']} ({source['section_type']})\")\n",
+            "        print(f\"  Page: {source['page']}\")\n",
+            "        print(f\"  Content: {source['content'][:150]}...\")\n",
+            "    \n",
+            "    print(f\"\\n{'='*80}\\n\")\n",
+            "    return result"
+        ]
+    })
+
+    # Cell 8: Test query 1
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Test Query 1: Well depth\n",
+            "result1 = query_and_display(\"What is the total depth of Well 5?\")"
+        ]
+    })
+
+    # Cell 9: Test query 2
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Test Query 2: Casing program\n",
+            "result2 = query_and_display(\"Describe the casing program for Well 5\")"
+        ]
+    })
+
+    # Cell 10: Test query 3
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Test Query 3: Geological formation\n",
+            "result3 = query_and_display(\"What is the geological formation in Well 7?\")"
+        ]
+    })
+
+    # Cell 11: Section filtering markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 4. Section-Filtered Queries\n",
+            "\n",
+            "Use TOC-aware metadata to filter queries by section type."
+        ]
+    })
+
+    # Cell 12: Section-filtered query
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Query with section type filter: casing\n",
+            "result_casing = query_and_display(\n",
+            "    \"Describe the casing program\",\n",
+            "    filter_metadata={\"section_type\": \"casing\"}\n",
+            ")"
+        ]
+    })
+
+    # Cell 13: Combined filter query
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# Query with combined filters: well + section type\n",
+            "result_combined = query_and_display(\n",
+            "    \"What are the casing specifications?\",\n",
+            "    filter_metadata={\n",
+            "        \"$and\": [\n",
+            "            {\"well_name\": \"well_5\"},\n",
+            "            {\"section_type\": \"casing\"}\n",
+            "        ]\n",
+            "    }\n",
+            ")"
+        ]
+    })
+
+    # Cell 14: Interactive query markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 5. Interactive Query Interface\n",
+            "\n",
+            "Try your own queries!"
+        ]
+    })
+
+    # Cell 15: Custom query cell
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# EDIT THIS - Try your own query!\n",
+            "custom_question = \"What is the reservoir pressure?\"\n",
+            "custom_filter = {\"well_name\": \"well_5\"}  # Optional filter\n",
+            "\n",
+            "result_custom = query_and_display(custom_question, filter_metadata=custom_filter)"
+        ]
+    })
+
+    # Cell 16: Performance test markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 6. Performance Benchmarking\n",
+            "\n",
+            "Measure query latency."
+        ]
+    })
+
+    # Cell 17: Performance test
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import time\n",
+            "\n",
+            "# Benchmark queries\n",
+            "test_queries = [\n",
+            "    \"What is the well depth?\",\n",
+            "    \"Describe the drilling program\",\n",
+            "    \"What is the reservoir geology?\"\n",
+            "]\n",
+            "\n",
+            "print(\"=\" * 80)\n",
+            "print(\"PERFORMANCE BENCHMARK\")\n",
+            "print(\"=\" * 80)\n",
+            "\n",
+            "latencies = []\n",
+            "for query in test_queries:\n",
+            "    start = time.time()\n",
+            "    result = qa_system.query(query)\n",
+            "    latency = time.time() - start\n",
+            "    latencies.append(latency)\n",
+            "    print(f\"\\nQuery: {query}\")\n",
+            "    print(f\"Latency: {latency:.2f}s\")\n",
+            "\n",
+            "print(f\"\\n{'='*80}\")\n",
+            "print(f\"Average latency: {sum(latencies)/len(latencies):.2f}s\")\n",
+            "print(f\"Min latency: {min(latencies):.2f}s\")\n",
+            "print(f\"Max latency: {max(latencies):.2f}s\")\n",
+            "print(f\"{'='*80}\")"
+        ]
+    })
+
+    # Cell 18: List available wells markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## 7. Available Wells\n",
+            "\n",
+            "List all wells in the database."
+        ]
+    })
+
+    # Cell 19: List wells
+    cells.append({
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "# List available wells\n",
+            "wells = qa_system.list_available_wells()\n",
+            "\n",
+            "print(\"=\" * 80)\n",
+            "print(f\"AVAILABLE WELLS ({len(wells)} total)\")\n",
+            "print(\"=\" * 80)\n",
+            "for i, well in enumerate(wells, 1):\n",
+            "    print(f\"{i}. {well}\")\n",
+            "print(\"=\" * 80)"
+        ]
+    })
+
+    # Cell 20: Summary markdown
+    cells.append({
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [
+            "## Summary\n",
+            "\n",
+            "**Production RAG QA System Features:**\n",
+            "\n",
+            "- **Pre-indexed Database:** 5,258 documents from 8 wells\n",
+            "- **TOC-Aware Metadata:** 93.1% section type coverage\n",
+            "- **Section Filtering:** Query specific sections (casing, geology, etc.)\n",
+            "- **Source Citation:** Full metadata for each retrieved document\n",
+            "- **Fast Queries:** <10s average latency\n",
+            "- **No Docker:** Local ChromaDB, no containers needed\n",
+            "\n",
+            "**Next Steps:**\n",
+            "\n",
+            "1. Try more complex queries\n",
+            "2. Experiment with section type filtering\n",
+            "3. Compare results across different wells\n",
+            "4. Explore parameter extraction (Sub-Challenge 2)\n",
+            "\n",
+            "**Related Notebooks:**\n",
+            "\n",
+            "- `07_production_rag_qa_demo.ipynb` - Comprehensive guide\n",
+            "- `06_sub_challenge_1_guide.ipynb` - Grading criteria\n",
+            "- `demos/08_toc_extraction_demo.ipynb` - TOC extraction details"
+        ]
+    })
+
+    # Create notebook structure
+    notebook = {
+        "cells": cells,
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3"
+            },
+            "language_info": {
+                "codemirror_mode": {
+                    "name": "ipython",
+                    "version": 3
+                },
+                "file_extension": ".py",
+                "mimetype": "text/x-python",
+                "name": "python",
+                "nbconvert_exporter": "python",
+                "pygments_lexer": "ipython3",
+                "version": "3.11.0"
+            }
+        },
+        "nbformat": 4,
+        "nbformat_minor": 4
+    }
+
+    # Write notebook
+    output_path = Path("notebooks/04_interactive_rag_demo_updated.ipynb")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(notebook, f, indent=2, ensure_ascii=False)
+
+    print(f"Created updated notebook: {output_path}")
+    print(f"Total cells: {len(cells)}")
+
+
+if __name__ == '__main__':
+    create_updated_notebook()
