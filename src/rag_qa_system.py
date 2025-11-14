@@ -20,11 +20,7 @@ sys.path.insert(0, str(project_root))
 
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain_ollama import OllamaLLM
 
 
 @dataclass
@@ -81,7 +77,6 @@ class WellReportQASystem:
         self._init_embeddings()
         self._init_vectorstore()
         self._init_llm()
-        self._init_qa_chain()
 
         if self.verbose:
             print(f"[OK] RAG QA System initialized")
@@ -127,23 +122,41 @@ class WellReportQASystem:
         if self.verbose:
             print(f"[LOAD] Initializing Ollama: {self.llm_model}...")
 
-        # Callback for streaming output (optional)
-        callback_manager = CallbackManager([StreamingStdOutCallbackHandler()]) if self.verbose else None
-
-        self.llm = Ollama(
+        self.llm = OllamaLLM(
             model=self.llm_model,
-            temperature=self.temperature,
-            callback_manager=callback_manager
+            temperature=self.temperature
         )
 
         if self.verbose:
             print(f"[OK] Ollama initialized")
 
-    def _init_qa_chain(self):
-        """Initialize QA chain with custom prompt"""
+    def _create_prompt(self, question: str, context_docs: List[Any]) -> str:
+        """
+        Create prompt with context for LLM
+
+        Args:
+            question: User question
+            context_docs: Retrieved documents
+
+        Returns:
+            Formatted prompt string
+        """
+        # Format context from documents
+        context_parts = []
+        for i, doc in enumerate(context_docs, 1):
+            well = doc.metadata.get('well_name', 'Unknown')
+            section = doc.metadata.get('section_title', 'Unknown')
+            page = doc.metadata.get('page', 'N/A')
+            content = doc.page_content
+
+            context_parts.append(
+                f"[Source {i}] Well: {well}, Section: {section}, Page: {page}\n{content}"
+            )
+
+        context = "\n\n".join(context_parts)
 
         # Custom prompt for well completion reports
-        prompt_template = """You are an expert in oil and gas well completion engineering. Use the following context from well completion reports to answer the question.
+        prompt = f"""You are an expert in oil and gas well completion engineering. Use the following context from well completion reports to answer the question.
 
 Context:
 {context}
@@ -159,28 +172,7 @@ Instructions:
 
 Answer:"""
 
-        PROMPT = PromptTemplate(
-            template=prompt_template,
-            input_variables=["context", "question"]
-        )
-
-        # Create retriever
-        self.retriever = self.vectorstore.as_retriever(
-            search_kwargs={"k": self.top_k}
-        )
-
-        # Create QA chain
-        self.qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            chain_type="stuff",
-            retriever=self.retriever,
-            return_source_documents=True,
-            chain_type_kwargs={"prompt": PROMPT},
-            verbose=self.verbose
-        )
-
-        if self.verbose:
-            print("[OK] QA chain initialized")
+        return prompt
 
     def query(
         self,
@@ -202,23 +194,36 @@ Answer:"""
             print(f"QUERY: {question}")
             print(f"{'='*80}\n")
 
-        # Update retriever with filter if provided
+        # Retrieve relevant documents
+        search_kwargs = {"k": self.top_k}
         if filter_metadata:
-            self.retriever.search_kwargs = {
-                "k": self.top_k,
-                "filter": filter_metadata
-            }
+            search_kwargs["filter"] = filter_metadata
             if self.verbose:
                 print(f"[FILTER] {filter_metadata}")
-        else:
-            self.retriever.search_kwargs = {"k": self.top_k}
 
-        # Run query
-        result = self.qa_chain.invoke({"query": question})
+        retrieved_docs = self.vectorstore.similarity_search(
+            question,
+            **search_kwargs
+        )
+
+        if self.verbose:
+            print(f"[RETRIEVAL] Found {len(retrieved_docs)} documents")
+
+        # Create prompt with context
+        prompt = self._create_prompt(question, retrieved_docs)
+
+        # Get answer from LLM
+        if self.verbose:
+            print(f"[LLM] Generating answer...\n")
+
+        answer = self.llm.invoke(prompt)
+
+        if self.verbose:
+            print(f"\n[OK] Answer generated")
 
         # Extract sources with metadata
         sources = []
-        for doc in result.get('source_documents', []):
+        for doc in retrieved_docs:
             source_info = {
                 'content': doc.page_content,
                 'well_name': doc.metadata.get('well_name', 'N/A'),
@@ -233,7 +238,7 @@ Answer:"""
         # Create result
         qa_result = QAResult(
             question=question,
-            answer=result['result'],
+            answer=answer,
             sources=sources,
             metadata={
                 'num_sources': len(sources),
